@@ -8,6 +8,7 @@ project(image-stiching)
 
 
 set(EXEC output)
+set(CMAKE_BUILD_TYPE Debug)
 
 find_package( OpenCV REQUIRED)
 
