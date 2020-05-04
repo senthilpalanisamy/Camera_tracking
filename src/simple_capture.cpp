@@ -25,15 +25,9 @@ class frameGrabber
   cv::Mat image0, image1, image2, image3;
   cv::Mat* image;
 
-  //static uchar buf[HORIZONTAL_RES * VERTICAL_RES];
-  //uchar buf0[HORIZONTAL_RES * VERTICAL_RES];
-  //uchar buf1[HORIZONTAL_RES * VERTICAL_RES];
-  //uchar buf2[HORIZONTAL_RES * VERTICAL_RES];
-  //uchar buf3[HORIZONTAL_RES * VERTICAL_RES];
   uchar *buf, *buf0, *buf1, *buf2, *buf3;
   frameGrabber(const char* configPath)
   {
-   cout<<"Enter Constructotr\n";
    pxd_PIXCIopen("", "", configPath);
 
    buf = (unsigned char*) malloc(  pxd_imageXdim()    // horizontal resolution
