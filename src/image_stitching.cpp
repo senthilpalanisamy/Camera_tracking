@@ -6,6 +6,8 @@
 
 #include "opencv2/stitching/detail/matchers.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
+#include <limits>
+
 
 
 using namespace cv;
@@ -40,13 +42,14 @@ class imageStitcher
   Mat stitchImages(Mat image1, Mat image2, Mat Homography)
    {
 
-    Mat image2_aligned;
+    Mat image2_aligned, dst;
     Size imgSize = image1.size();
-    imgSize.width = imgSize.width + image2.size().width; 
+    //imgSize.width = imgSize.width + image2.size().width; 
+    imgSize = imgSize + image2.size();
+    int j,i;
+
     warpPerspective (image2, image2_aligned, Homography, imgSize,INTER_LINEAR + WARP_INVERSE_MAP);
-    imshow("Warped Image", image2_aligned);
-    waitKey(0);
-    size_t j,i;
+    // check if this logic is little rudimentary
     for(i=0; i < image1.size().height; i++)
      {
         for(j=0; j < image1.size().width;j++)
@@ -59,9 +62,60 @@ class imageStitcher
           }
      }
 
-    imshow("stitched Image", image2_aligned);
-    waitKey(0);
-    return image2_aligned;
+    threshold( image2_aligned, dst, 0, 255,THRESH_BINARY);
+    //imshow("stiched", image2_aligned);
+    //imshow("thresholded", dst);
+    //waitKey(0);
+
+    int min_x = std::numeric_limits<int>::max();
+    int max_x = std::numeric_limits<int>::min();
+    int min_y = std::numeric_limits<int>::max();
+    int max_y = std::numeric_limits<int>::min();
+    for(i=0; i < dst.size().height; i++)
+    {
+      for(j=0; j < dst.size().width; j++)
+      {
+        if(dst.at<char>(i,j) !=0)
+        {
+          if(i < min_y)
+          {
+            min_y = i;
+          }
+           if(i > max_y)
+           {
+             max_y = i;
+           }
+
+           if(j < min_x)
+           {
+             min_x = j;
+           }
+
+           if(j > max_x)
+           {
+             max_x = j;
+           }
+        }
+
+      }
+
+    }
+
+    Mat finalImage(max_y - min_y, max_x- min_x, CV_8U);
+    for(i=0; i < finalImage.size().height; i++)
+    {
+      for(j=0; j< finalImage.size().width; j++)
+      {
+        finalImage.at<char>(i,j) = image2_aligned.at<char>(min_y+i, min_x + j);
+      }
+    }
+
+    //imshow("aligned", image2_aligned);
+    //imshow("thresholed", dst);
+    //imshow("Warped Image", finalImage);
+    //imshow("stitched Image", finalImage);
+    //waitKey(0);
+    return finalImage;
    }
 
   Mat computeHomography(Mat image1, Mat image2)
@@ -87,7 +141,8 @@ class imageStitcher
   }
   vector<MatchesInfo> pairwise_matches;
 
-  auto detector = ORB::create();
+  //auto detector = ORB::create();
+  auto detector = SIFT::create();
   size_t num_images = 2;
 
   for(i=0; i < 2; i++)
@@ -103,8 +158,8 @@ class imageStitcher
     Mat img_matches;
     drawMatches( images[0], keypoints[0], images[1], keypoints[1], matches, img_matches, Scalar::all(-1),
                  Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    imshow("matched_image", img_matches);
-    waitKey(0);
+    //imshow("matched_image", img_matches);
+    //waitKey(0);
 
     std::vector<Point2f> obj;
     std::vector<Point2f> scene;
@@ -126,23 +181,23 @@ class imageStitcher
 
 int main(void)
 {
-  //Mat img1 = cv::imread("../data/boat1.jpg", 0);
-  //Mat img2 = cv::imread("../data/boat2.jpg", 0);
-  //Mat img3 = cv::imread("../data/boat3.jpg", 0);
-  //Mat img4 = cv::imread("../data/boat4.jpg", 0);
-  //Mat img5 = cv::imread("../data/boat5.jpg", 0);
-  //Mat img6 = cv::imread("../data/boat6.jpg", 0);
-  Mat img1 = cv::imread("../data/newspaper1.jpg", 0);
-  Mat img2 = cv::imread("../data/newspaper2.jpg", 0);
-  Mat img3 = cv::imread("../data/newspaper3.jpg", 0);
-  Mat img4 = cv::imread("../data/newspaper4.jpg", 0);
+  Mat img1 = cv::imread("../data/boat1.jpg", 0);
+  Mat img2 = cv::imread("../data/boat2.jpg", 0);
+  Mat img3 = cv::imread("../data/boat3.jpg", 0);
+  Mat img4 = cv::imread("../data/boat4.jpg", 0);
+  Mat img5 = cv::imread("../data/boat5.jpg", 0);
+  Mat img6 = cv::imread("../data/boat6.jpg", 0);
+  //Mat img1 = cv::imread("../data/newspaper1.jpg", 0);
+  //Mat img2 = cv::imread("../data/newspaper2.jpg", 0);
+  //Mat img3 = cv::imread("../data/newspaper3.jpg", 0);
+  //Mat img4 = cv::imread("../data/newspaper4.jpg", 0);
   vector<Mat> images;
   images.push_back(img1);
   images.push_back(img2);
   images.push_back(img3);
   images.push_back(img4);
-  //images.push_back(img5);
-  //images.push_back(img6);
+  images.push_back(img5);
+  images.push_back(img6);
   imageStitcher imgStitcher(images);
   //SurfFeatureDetector surfDetector;
 
