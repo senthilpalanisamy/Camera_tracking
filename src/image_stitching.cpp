@@ -13,56 +13,98 @@ using std::vector;
 using namespace cv::xfeatures2d;
 using cv::detail::MatchesInfo;
 
-
-int main(void)
+class imageStitcher
 {
-  Mat img1 = cv::imread("../data/b1.png", 0);
-  Mat img2 = cv::imread("../data/b2.png", 0);
-  vector<Mat> images;
-  images.push_back(img1);
-  images.push_back(img2);
-  size_t noOfImages=2;
-  //SurfFeatureDetector surfDetector;
+  public:
+  imageStitcher(vector<Mat> images)
+  {
+   size_t i;
+   Mat stitchedImage = images[0].clone();
+   for(i=0; i < images.size()-1; i++)
+   {
+   Mat homography = computeHomography(stitchedImage, images[i+1]);
+   stitchedImage = stitchImages(stitchedImage, images[i+1], homography);
+
+   //imwrite("result.jpg", stitchedImage);
+   //imshow("stitchedImage", stitchedImage);
+   //imshow("newImage", images[i+1]);
+   //waitKey(0);
+   }
+   //imshow("stitchedImage", stitchedImage);
+   //waitKey(0);
+   imwrite("result.jpg", stitchedImage);
+  }
+
+
+  private:
+  Mat stitchImages(Mat image1, Mat image2, Mat Homography)
+   {
+
+    Mat image2_aligned;
+    Size imgSize = image1.size();
+    imgSize.width = imgSize.width + image2.size().width; 
+    warpPerspective (image2, image2_aligned, Homography, imgSize,INTER_LINEAR + WARP_INVERSE_MAP);
+    imshow("Warped Image", image2_aligned);
+    waitKey(0);
+    size_t j,i;
+    for(i=0; i < image1.size().height; i++)
+     {
+        for(j=0; j < image1.size().width;j++)
+        {
+          if(image1.at<char>(i,j)!=0)
+          {
+           //image2_aligned(i, j) = images[0](i, j);
+           image2_aligned.at<char>(i,j) = image1.at<char>(i,j);
+          }
+          }
+     }
+
+    imshow("stitched Image", image2_aligned);
+    waitKey(0);
+    return image2_aligned;
+   }
+
+  Mat computeHomography(Mat image1, Mat image2)
+  {
+   vector<Mat> images;
+   images.push_back(image1);
+   images.push_back(image2);
 
 
   vector<Mat> descriptors;
   size_t i=0;
-  for(;i<noOfImages; i++)
+  for(;i<2; i++)
   {
     Mat img_descriptor;
     descriptors.push_back(img_descriptor);
   }
   vector<vector<KeyPoint>> keypoints;
 
-  for(i=0;i<noOfImages; i++)
+  for(i=0;i<2; i++)
   {
     vector<KeyPoint> imgKeypoint;
     keypoints.push_back(imgKeypoint);
   }
   vector<MatchesInfo> pairwise_matches;
 
-  //vector<ImageFeatures> features(num_images);
-
-  //auto siftDetector = SIFT_create();
-   auto detector = ORB::create();
+  auto detector = ORB::create();
   size_t num_images = 2;
-   
+
   for(i=0; i < 2; i++)
    {
     detector->detectAndCompute( images[i], cv::noArray(), keypoints[i], descriptors[i] );
-
-    //surfDetector.detectAndCompute(images[i], noArray(), keypoints[i], descriptors[i]);
    } 
    BFMatcher brute_force_matcher = cv::BFMatcher(NORM_L2, true);
    vector< cv::DMatch > matches;
    brute_force_matcher.match(descriptors[0], descriptors[1], matches);
-   //Ptr<SURF> detector = SURF::create(0.4);
-    const float ratio_thresh = 0.7f;
+   const float ratio_thresh = 0.7f;
 
     // debugging
     Mat img_matches;
     drawMatches( images[0], keypoints[0], images[1], keypoints[1], matches, img_matches, Scalar::all(-1),
                  Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    imshow("matched_image", img_matches);
+    waitKey(0);
 
     std::vector<Point2f> obj;
     std::vector<Point2f> scene;
@@ -73,23 +115,37 @@ int main(void)
         scene.push_back(keypoints[1][matches[i].trainIdx].pt);
     }
     Mat H = findHomography( obj, scene, RANSAC );
-    Mat image2_aligned;
-    Size imgSize = images[0].size();
-    imgSize.width = imgSize.width + images[1].size().width; 
-    warpPerspective (images[1], image2_aligned, H, imgSize,INTER_LINEAR + WARP_INVERSE_MAP);
-    size_t j;
-    for(i=0; i < images[0].size().height; i++)
-     {
-        for(j=0; j < images[0].size().width;j++)
-        {
-        //image2_aligned(i, j) = images[0](i, j);
-        image2_aligned.at<char>(i,j) = images[0].at<char>(i,j);
-        }
+    return H;
+
+  }
 
 
-    }
 
-    //-- Show detected matches
-    imshow("Good Matches", image2_aligned);
-    waitKey();
+
+};
+
+int main(void)
+{
+  //Mat img1 = cv::imread("../data/boat1.jpg", 0);
+  //Mat img2 = cv::imread("../data/boat2.jpg", 0);
+  //Mat img3 = cv::imread("../data/boat3.jpg", 0);
+  //Mat img4 = cv::imread("../data/boat4.jpg", 0);
+  //Mat img5 = cv::imread("../data/boat5.jpg", 0);
+  //Mat img6 = cv::imread("../data/boat6.jpg", 0);
+  Mat img1 = cv::imread("../data/newspaper1.jpg", 0);
+  Mat img2 = cv::imread("../data/newspaper2.jpg", 0);
+  Mat img3 = cv::imread("../data/newspaper3.jpg", 0);
+  Mat img4 = cv::imread("../data/newspaper4.jpg", 0);
+  vector<Mat> images;
+  images.push_back(img1);
+  images.push_back(img2);
+  images.push_back(img3);
+  images.push_back(img4);
+  //images.push_back(img5);
+  //images.push_back(img6);
+  imageStitcher imgStitcher(images);
+  //SurfFeatureDetector surfDetector;
+
+
+
 }
