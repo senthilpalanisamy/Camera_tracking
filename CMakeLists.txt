@@ -32,8 +32,11 @@ SET(CLIB_SOURCES src/simple_capture.cpp)
 SET(IMG_STITCH_SRC src/image_stitching.cpp)
 
 # compiles the files defined by SOURCES to generante the executable defined by EXEC
-add_executable(${CLIB_EXEC} ${CLIB_SOURCES})
+add_library(${CLIB_EXEC} ${CLIB_SOURCES})
 add_executable(${IMAGE_STITCH_EXEC} ${IMG_STITCH_SRC})
-target_link_libraries(${CLIB_EXEC} /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m)
+target_include_directories(${IMAGE_STITCH_EXEC} PRIVATE ./include/)
+target_include_directories(${CLIB_EXEC} PRIVATE ./include/)
+
 target_link_libraries(${CLIB_EXEC} ${OpenCV_LIBS})
-target_link_libraries(${IMAGE_STITCH_EXEC} ${OpenCV_LIBS})
+target_link_libraries(${CLIB_EXEC} /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m)
+target_link_libraries(${IMAGE_STITCH_EXEC} ${OpenCV_LIBS} ${CLIB_EXEC})
