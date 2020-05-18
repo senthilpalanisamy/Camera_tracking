@@ -12,7 +12,7 @@
 #include <iostream>
 
 
-# define DEBUG 1
+//# define DEBUG 0
 
 
 
@@ -21,6 +21,8 @@ using std::vector;
 using namespace cv::xfeatures2d;
 using cv::detail::MatchesInfo;
 using std::cout;
+using namespace std::chrono;
+using std::endl;
 
 class imageStitcher
 {
@@ -28,6 +30,8 @@ class imageStitcher
 
   vector<Point2f> pointsMapping;
   Size opSize;
+  Size finalSize;
+  vector<Mat> allHomographies;
   imageStitcher(vector<Mat> images)
   {
    size_t i, j;
@@ -59,7 +63,9 @@ class imageStitcher
 
    Mat ipImage = images[i];
    Mat homography = computeHomographyChessBoard(ipImage);
+   allHomographies.push_back(homography);
    stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
+
 
    imwrite("image"+std::to_string(i)+".jpg", ipImage);
 
@@ -73,6 +79,35 @@ class imageStitcher
    stitchedImage = getbiggestBoundingboxImage(stitchedImage);
    imwrite("result.jpg", stitchedImage);
   }
+
+  Mat stitchImagesOnline(vector<Mat> images)
+  {
+
+   Mat outputImage(finalSize, CV_8U, Scalar(0));
+   size_t i;
+
+   for(i=0; i < images.size(); i++)
+   {
+   Mat ipImage = images[i];
+
+   //namedWindow("ip_image_online",WINDOW_NORMAL);
+   //resizeWindow("ip_image_online", 600, 600);
+   //imshow("ip_image_online", ipImage);
+   //waitKey(0);
+
+   //namedWindow("stitchedImageOnline",WINDOW_NORMAL);
+   //resizeWindow("stitchedImageOnline", 600, 600);
+   //imshow("stitchedImageOnline", outputImage);
+   //waitKey(0);
+   //imwrite("stitchedImage.jpg", outputImage);
+
+   Mat homography = allHomographies[i];
+   outputImage = stitchImageschessBoard(outputImage, ipImage, homography);
+
+
+  }
+    return outputImage;
+   }
 
 
   private:
@@ -116,6 +151,7 @@ class imageStitcher
     }
 
     Mat finalImage(max_y - min_y, max_x- min_x, CV_8U);
+    finalSize = Size(max_y-min_y, max_x-min_x);
     for(i=0; i < finalImage.size().height; i++)
     {
       for(j=0; j< finalImage.size().width; j++)
@@ -141,11 +177,14 @@ class imageStitcher
                                    Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 30, 0.0001  ));
        drawChessboardCorners( image, Size(9,6), Mat(detectedPoints), found  );
 
+       H = findHomography( pointsMapping, detectedPoints, RANSAC);
+
+       #ifdef DEBUG
        namedWindow("image",WINDOW_NORMAL);
        resizeWindow("image", 600, 600);
        imshow("image", image);
        waitKey(0);
-       H = findHomography( pointsMapping, detectedPoints, RANSAC);
+       #endif
        // H = findHomography( detectedPoints, pointsMapping, 0);
     }
     else
@@ -167,7 +206,9 @@ class imageStitcher
     Mat imageUnwarped;
     size_t i=0, j=0;
 
-    warpPerspective (ipImage, imageUnwarped, Homography, opSize,INTER_LINEAR + WARP_INVERSE_MAP);
+    Size warpedImageSize = stitchedImage.size();
+
+    warpPerspective (ipImage, imageUnwarped, Homography, warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
 
     for(i=0; i < imageUnwarped.size().height; i++)
      {
@@ -181,6 +222,8 @@ class imageStitcher
           }
      }
 
+    #ifdef DEBUG
+
 
     namedWindow("StitchedImage",WINDOW_NORMAL);
     resizeWindow("StitchedImage", 600, 600);
@@ -192,6 +235,7 @@ class imageStitcher
     imshow("warpedImage", imageUnwarped);
 
     waitKey(0);
+    #endif
 
     return stitchedImage;
 
@@ -377,8 +421,31 @@ int main(void)
   //images.push_back(img5);
   //images.push_back(img6);
   imageStitcher imgStitcher(images);
-  //SurfFeatureDetector surfDetector;
+  Mat stitchedImage;
 
+  namedWindow("stitchedImageop",WINDOW_NORMAL);
+  resizeWindow("stitchedImageop", 600, 600);
+  while(true)
+  {
+    auto start = high_resolution_clock::now();
+    imageTransferObj.transferAllImagestoPC();
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    cout<<"image acquisition time:"<<duration.count()<<endl;
+    vector<Mat> images;
+    images.push_back(imageTransferObj.image0);
+    images.push_back(imageTransferObj.image2);
+    images.push_back(imageTransferObj.image1);
+    images.push_back(imageTransferObj.image3);
 
+    start = high_resolution_clock::now();
+    stitchedImage = imgStitcher.stitchImagesOnline(images);
+    stop = high_resolution_clock::now();
+    duration = duration_cast<milliseconds>(stop - start);
+    cout<<"Image stitching time:"<<duration.count()<<endl;
+    imshow("stitchedImageop", stitchedImage);
+    if(waitKey(1) >= 0)
+      break;
+}
 
 }
