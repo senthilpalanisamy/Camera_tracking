@@ -39,8 +39,8 @@ class imageStitcher
    int boardLength = 9, boardWidth = 6;
    int opimgWidth = 2048 * 2, opimgheight = 2048 * 2;
    opSize = Size(opimgWidth, opimgheight);
-   float chessCenterx = opimgWidth / 2.0 - (boardLength - 1) / 2.0 * squareSize;
-   float chessCenterY = opimgheight / 2.0 - (boardLength - 1) / 2.0 * squareSize;
+   float chessCenterx = opimgWidth / 2.0 - boardLength / 2.0 * squareSize;
+   float chessCenterY = opimgheight / 2.0 - boardWidth/ 2.0 * squareSize;
 
    for(i=0; i < boardLength; i++)
    {
@@ -76,14 +76,43 @@ class imageStitcher
    }
    //imshow("stitchedImage", stitchedImage);
    //waitKey(0);
-   stitchedImage = getbiggestBoundingboxImage(stitchedImage);
-   imwrite("result.jpg", stitchedImage);
+   Mat output;
+   output = getbiggestBoundingboxImage(stitchedImage);
+
+   //float w_diff = opSize.width / 2.0 - finalSize.width / 2.0;
+   //float h_diff = opSize.height / 2.0 - finalSize.height / 2.0;
+
+   //Mat Ht(Size(3,3), CV_64F, Scalar(0));
+   //Ht.at<double>(0,0) = 1.0;
+   //Ht.at<double>(1,1) = 1.0;
+   //Ht.at<double>(2,2) = 1.0;
+   //Ht.at<double>(0,2) = -w_diff;
+   //Ht.at<double>(1,2) = -h_diff;
+
+   //for(auto& h:allHomographies)
+   //{
+   //  h = Ht * h;
+
+   //  //double scale  = h.at<double>(2,2);
+   //  //h.at<double>(0,0) = h.at<double>(0,0) / scale;
+   //  //h.at<double>(0,1) = h.at<double>(0,1) / scale;
+   //  //h.at<float>(0,2) = h.at<float>(0,2)  - scale * w_diff;
+   //  //h.at<double>(1,0) = h.at<double>(1,0) / scale;
+   //  //h.at<double>(1,1) = h.at<double>(1,1) / scale;
+   //  //h.at<double>(1,2) = h.at<double>(1,2) - scale * h_diff;
+   //  //h.at<float>(1,2) = h.at<float>(1,2) / scale - h_diff;
+
+   //}
+   imwrite("result.jpg", output);
   }
 
   Mat stitchImagesOnline(vector<Mat> images)
   {
 
-   Mat outputImage(finalSize, CV_8U, Scalar(0));
+   Mat outputImage(opSize, CV_8U, Scalar(0));
+   //Mat outputImage(finalSize, CV_8U, Scalar(0));
+
+
    size_t i;
 
    for(i=0; i < images.size(); i++)
@@ -106,6 +135,10 @@ class imageStitcher
 
 
   }
+
+   outputImage = getbiggestBoundingboxImage(outputImage);
+
+   imwrite("stitchedImage.jpg", outputImage);
     return outputImage;
    }
 
@@ -151,7 +184,9 @@ class imageStitcher
     }
 
     Mat finalImage(max_y - min_y, max_x- min_x, CV_8U);
-    finalSize = Size(max_y-min_y, max_x-min_x);
+    //Mat finalImage(max_x - min_x, max_y- min_y, CV_8U);
+    //finalSize = Size(max_x-min_x, max_y-min_y);
+    finalSize = finalImage.size();
     for(i=0; i < finalImage.size().height; i++)
     {
       for(j=0; j< finalImage.size().width; j++)

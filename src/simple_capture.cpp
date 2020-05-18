@@ -2,13 +2,10 @@
 #include <stdlib.h>
 #include "xcliball.h"
 #include <iostream>
+#include "simple_capture.hpp"
 //#include <cstdlib>
 
 
-#include "opencv2/core.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/features2d.hpp"
-#include "opencv2/xfeatures2d.hpp"
 
 using namespace cv::xfeatures2d;
 using std::cout;
@@ -19,14 +16,7 @@ using cv::imshow;
 using cv::waitKey;
 
 
-class frameGrabber
-{
-  public:
-  cv::Mat image0, image1, image2, image3;
-  cv::Mat* image;
-
-  uchar *buf, *buf0, *buf1, *buf2, *buf3;
-  frameGrabber(const char* configPath)
+frameGrabber::frameGrabber(const char* configPath)
   {
    pxd_PIXCIopen("", "", configPath);
 
@@ -49,7 +39,7 @@ class frameGrabber
                        * sizeof(unsigned char));
   }
 
-  void transferImagetoPC(size_t frameGrabberNo)
+  void frameGrabber::transferImagetoPC(size_t frameGrabberNo)
   {
     size_t cameraNo = 1 << frameGrabberNo;
     pxd_doSnap(cameraNo, 1, 0);
@@ -88,7 +78,7 @@ class frameGrabber
 
   }
 
-  void transferAllImagestoPC()
+  void frameGrabber::transferAllImagestoPC()
   {
 
     for(size_t i=0; i < 4; i++)
@@ -98,7 +88,7 @@ class frameGrabber
 
   }
 
-  void displayAllImages()
+  void frameGrabber::displayAllImages()
   {
     imshow("image0", image0);
     imshow("image1", image1);
@@ -107,7 +97,7 @@ class frameGrabber
     waitKey(0);
   }
 
-  ~frameGrabber()
+  frameGrabber::~frameGrabber()
   {
    pxd_PIXCIclose();
    free(buf0);
@@ -115,12 +105,11 @@ class frameGrabber
    free(buf2);
    free(buf3);
   }
-};
 
-int main(void)
-{
-  frameGrabber imageTransferObj("camera2.fmt");
-  imageTransferObj.transferAllImagestoPC();
-  imageTransferObj.displayAllImages();
-
-}
+// int main(void)
+// {
+//   frameGrabber imageTransferObj("../data/camera2.fmt");
+//   imageTransferObj.transferAllImagestoPC();
+//   imageTransferObj.displayAllImages();
+// 
+// }
