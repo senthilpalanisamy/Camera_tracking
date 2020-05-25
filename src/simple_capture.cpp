@@ -37,12 +37,19 @@ frameGrabber::frameGrabber(const char* configPath)
    buf3 = (unsigned char*) malloc(  pxd_imageXdim()    // horizontal resolution
                        * pxd_imageYdim()    // vertical resolution
                        * sizeof(unsigned char));
+   for(int i=0; i < 4; i++)
+   {
+
+     size_t cameraNo = 1 << i;
+     //pxd_goLivePair(cameraNo, 0, 1);
+     pxd_goLive(cameraNo, 1);  
+   }
   }
 
   void frameGrabber::transferImagetoPC(size_t frameGrabberNo)
   {
     size_t cameraNo = 1 << frameGrabberNo;
-    pxd_doSnap(cameraNo, 1, 0);
+    //pxd_doSnap(cameraNo, 1, 0);
 
     switch(frameGrabberNo)
     {
@@ -63,6 +70,7 @@ frameGrabber::frameGrabber(const char* configPath)
               break;
       default: cout<<"Invalid number for frame grabber unit. Enter a number between 0-3";
     }
+    cout<<"reading buffer\n";
 
     auto i = pxd_readuchar(cameraNo,         // select PIXCI(R) unit 1
                     1,           // select frame buffer 1
@@ -73,6 +81,7 @@ frameGrabber::frameGrabber(const char* configPath)
                     pxd_imageXdim() * pxd_imageYdim(),
                                  // size of program buffer in short's
                     "Grey");     // color space to access
+    // buf = pxd_capturedBuffer(0x1)
 
     *image = cv::Mat( pxd_imageYdim(),  pxd_imageXdim(), CV_8UC1, buf , 0 );
 
