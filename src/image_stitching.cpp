@@ -11,6 +11,10 @@
 #include "simple_capture.hpp"
 #include <iostream>
 
+//#include "tbb/tbb.h"
+
+//using tbb::parallel_for;
+
 
 //# define DEBUG 0
 
@@ -24,6 +28,45 @@ using std::cout;
 using namespace std::chrono;
 using std::endl;
 
+class ParallelPixelTransfer: public ParallelLoopBody
+{
+  mutable Mat unwarpedImage;
+  mutable Mat stitchedImage;
+  public:
+    ParallelPixelTransfer(Mat& srcPtr, Mat& dstPtr)
+    {
+      unwarpedImage = srcPtr;
+      stitchedImage = dstPtr;
+    }
+
+    virtual void operator() (const Range& range) const CV_OVERRIDE
+    {
+      int r=0;
+      for(r = range.start; r < range.end; r++)
+      {
+        int i = r / unwarpedImage.cols;
+        int j = r % unwarpedImage.cols;
+        // cout<<"\n image width:"<<unwarpedImage.cols<<" image height"<<unwarpedImage.rows<<"\n";
+        // cout<<"\n"<<range.start<<" "<<range.end<<" "<<r<<" "<<i<<" "<<j<<"\n";
+
+          // May be a weak check
+          if(stitchedImage.ptr<uchar>(i)[j] == 0)
+          {
+            stitchedImage.ptr<uchar>(i)[j] = unwarpedImage.ptr<uchar>(i)[j];
+          }
+          }
+     }
+     
+    ParallelPixelTransfer& operator=(const ParallelPixelTransfer&)
+    {
+      return *this;
+    }
+
+
+
+      };
+
+
 class imageStitcher
 {
   public:
@@ -32,15 +75,23 @@ class imageStitcher
   Size opSize;
   Size finalSize;
   vector<Mat> allHomographies;
+  int min_x, max_x, min_y, max_y;
+
   imageStitcher(vector<Mat> images)
   {
    size_t i, j;
    float squareSize = 30;
    int boardLength = 9, boardWidth = 6;
-   int opimgWidth = 2048 * 2, opimgheight = 2048 * 2;
+   int opimgWidth = images[0].cols * 2, opimgheight = images[0].rows * 2;
    opSize = Size(opimgWidth, opimgheight);
    float chessCenterx = opimgWidth / 2.0 - boardLength / 2.0 * squareSize;
    float chessCenterY = opimgheight / 2.0 - boardWidth/ 2.0 * squareSize;
+
+
+   min_x = std::numeric_limits<int>::max();
+   max_x = std::numeric_limits<int>::min();
+   min_y = std::numeric_limits<int>::max();
+   max_y = std::numeric_limits<int>::min();
 
    for(i=0; i < boardLength; i++)
    {
@@ -59,7 +110,7 @@ class imageStitcher
 
    for(i=0; i < images.size(); i++)
    {
-     cout<<"image no"<<i<<"\n";
+     //cout<<"image no"<<i<<"\n";
 
    Mat ipImage = images[i];
    Mat homography = computeHomographyChessBoard(ipImage);
@@ -67,7 +118,7 @@ class imageStitcher
    stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
 
 
-   imwrite("image"+std::to_string(i)+".jpg", ipImage);
+   //imwrite("image"+std::to_string(i)+".jpg", ipImage);
 
    // imwrite("result.jpg", stitchedImage);
    //imshow("stitchedImage", stitchedImage);
@@ -76,6 +127,7 @@ class imageStitcher
    }
    //imshow("stitchedImage", stitchedImage);
    //waitKey(0);
+   //cout<<"out of loop";
    Mat output;
    output = getbiggestBoundingboxImage(stitchedImage);
 
@@ -89,27 +141,27 @@ class imageStitcher
    //Ht.at<double>(0,2) = -w_diff;
    //Ht.at<double>(1,2) = -h_diff;
 
-   //for(auto& h:allHomographies)
-   //{
+   for(auto& h:allHomographies)
+   {
    //  h = Ht * h;
 
-   //  //double scale  = h.at<double>(2,2);
-   //  //h.at<double>(0,0) = h.at<double>(0,0) / scale;
-   //  //h.at<double>(0,1) = h.at<double>(0,1) / scale;
-   //  //h.at<float>(0,2) = h.at<float>(0,2)  - scale * w_diff;
-   //  //h.at<double>(1,0) = h.at<double>(1,0) / scale;
-   //  //h.at<double>(1,1) = h.at<double>(1,1) / scale;
-   //  //h.at<double>(1,2) = h.at<double>(1,2) - scale * h_diff;
-   //  //h.at<float>(1,2) = h.at<float>(1,2) / scale - h_diff;
+   double scale  = h.at<double>(2,2);
+   //h.at<double>(0,0) = h.at<double>(0,0) / scale;
+   //h.at<double>(0,1) = h.at<double>(0,1) / scale;
+   h.at<float>(0,2) = h.at<float>(0,2)  - scale * min_x;
+   //h.at<double>(1,0) = h.at<double>(1,0) / scale;
+   //h.at<double>(1,1) = h.at<double>(1,1) / scale;
+   h.at<double>(1,2) = h.at<double>(1,2) - scale * min_y;
+   //h.at<float>(1,2) = h.at<float>(1,2) / scale - h_diff;
 
-   //}
-   imwrite("result.jpg", output);
+   }
+   //imwrite("result.jpg", output);
   }
 
   Mat stitchImagesOnline(vector<Mat> images)
   {
 
-   Mat outputImage(opSize, CV_8U, Scalar(0));
+   Mat outputImage(finalSize, CV_8U, Scalar(0));
    //Mat outputImage(finalSize, CV_8U, Scalar(0));
 
 
@@ -136,9 +188,9 @@ class imageStitcher
 
   }
 
-   outputImage = getbiggestBoundingboxImage(outputImage);
+   //outputImage = getbiggestBoundingboxImage(outputImage);
 
-   imwrite("stitchedImage.jpg", outputImage);
+   //imwrite("stitchedImage.jpg", outputImage);
     return outputImage;
    }
 
@@ -148,10 +200,6 @@ class imageStitcher
   {
 
 
-    int min_x = std::numeric_limits<int>::max();
-    int max_x = std::numeric_limits<int>::min();
-    int min_y = std::numeric_limits<int>::max();
-    int max_y = std::numeric_limits<int>::min();
     int i, j;
     for(i=0; i < image.size().height; i++)
     {
@@ -245,17 +293,25 @@ class imageStitcher
 
     warpPerspective (ipImage, imageUnwarped, Homography, warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
 
-    for(i=0; i < imageUnwarped.size().height; i++)
-     {
-        for(j=0; j < imageUnwarped.size().width;j++)
-        {
-          // May be a weak check
-          if(stitchedImage.at<char>(i,j)==0)
-          {
-           stitchedImage.at<char>(i,j) = imageUnwarped.at<char>(i,j);
-          }
-          }
-     }
+    ParallelPixelTransfer parellelPixelTransfer(imageUnwarped, stitchedImage);
+
+    // cout<<"starting parallel for";
+    parallel_for_(Range(0, imageUnwarped.rows * imageUnwarped.cols), parellelPixelTransfer);
+    // cout<<"ending parallel for\n";
+
+     //for(i=0; i < imageUnwarped.size().height; i++)
+     // {
+     //   uchar * imageUnwarpedPtr = imageUnwarped.ptr(i);
+     //   uchar * stitchedImagePtr = stitchedImage.ptr(i);
+     //    for(j=0; j < imageUnwarped.size().width;j++)
+     //    {
+     //      // May be a weak check
+     //      if(stitchedImagePtr[j]==0)
+     //      {
+     //       stitchedImagePtr[j] = imageUnwarpedPtr[j];
+     //      }
+     //      }
+     // }
 
     #ifdef DEBUG
 
@@ -410,7 +466,7 @@ class imageStitcher
     drawMatches( images[0], keypoints[0], images[1], keypoints[1], matches, img_matches, Scalar::all(-1),
                  Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
     imshow("matched_image", img_matches);
-    imwrite("mathced_image.jpg", img_matches);
+    //imwrite("mathced_image.jpg", img_matches);
     waitKey(0);
     #endif
 
@@ -444,6 +500,7 @@ int main(void)
   //Mat img2 = cv::imread("../data/newspaper2.jpg", 0);
   //Mat img3 = cv::imread("../data/newspaper3.jpg", 0);
   //Mat img4 = cv::imread("../data/newspaper4.jpg", 0);
+  cout<<"started capture";
   frameGrabber imageTransferObj("../data/camera2.fmt");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;
@@ -451,6 +508,7 @@ int main(void)
   images.push_back(imageTransferObj.image2);
   images.push_back(imageTransferObj.image1);
   images.push_back(imageTransferObj.image3);
+  cout<<"ended capture";
   //images.push_back(img3);
   //images.push_back(img4);
   //images.push_back(img5);
@@ -458,8 +516,11 @@ int main(void)
   imageStitcher imgStitcher(images);
   Mat stitchedImage;
 
-  namedWindow("stitchedImageop",WINDOW_NORMAL);
-  resizeWindow("stitchedImageop", 600, 600);
+  //namedWindow("stitchedImageop",WINDOW_NORMAL);
+  //resizeWindow("stitchedImageop", 600, 600);
+  cout<<"OPENCV version"<<CV_VERSION;
+  cout<<"Major version"<<CV_MAJOR_VERSION;
+  cout<<"\nBuild Information:"<<getBuildInformation();
   while(true)
   {
     auto start = high_resolution_clock::now();
@@ -473,6 +534,7 @@ int main(void)
     images.push_back(imageTransferObj.image1);
     images.push_back(imageTransferObj.image3);
 
+    cout<<"\nstitching image\n";
     start = high_resolution_clock::now();
     stitchedImage = imgStitcher.stitchImagesOnline(images);
     stop = high_resolution_clock::now();
@@ -481,6 +543,12 @@ int main(void)
     imshow("stitchedImageop", stitchedImage);
     if(waitKey(1) >= 0)
       break;
+    imageTransferObj.displayAllImages();
+    imwrite("outputimage.png", stitchedImage);
+    imwrite("image1.png", images[0]);
+    imwrite("image2.png", images[1]);
+    imwrite("image3.png", images[2]);
+    imwrite("image4.png", images[3]);
 }
 
 }
