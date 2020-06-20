@@ -9,11 +9,13 @@ project(image-stiching)
 
 set(CLIB_EXEC output)
 set(IMAGE_STITCH_EXEC image_output2)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE Debug)
 
-find_package( OpenCV REQUIRED)
+find_package( OpenCV 4.0.1 REQUIRED)
 
 
+#SET(DRIVER_FLAGS "-DC_GNU64=400 -DOS_LINUX -no-pie -pg")
 SET(DRIVER_FLAGS "-DC_GNU64=400 -DOS_LINUX -no-pie")
 #set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_CXX_COMPILER "g++")
