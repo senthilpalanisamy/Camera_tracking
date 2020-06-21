@@ -40,5 +40,5 @@ target_include_directories(${IMAGE_STITCH_EXEC} PRIVATE ./include/)
 target_include_directories(${CLIB_EXEC} PRIVATE ./include/)
 
 target_link_libraries(${CLIB_EXEC} ${OpenCV_LIBS})
-target_link_libraries(${CLIB_EXEC} /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m)
+target_link_libraries(${CLIB_EXEC} /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m -pthread)
 target_link_libraries(${IMAGE_STITCH_EXEC} ${OpenCV_LIBS} ${CLIB_EXEC})
