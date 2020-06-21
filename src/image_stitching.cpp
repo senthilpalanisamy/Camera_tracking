@@ -10,6 +10,7 @@
 
 #include "simple_capture.hpp"
 #include <iostream>
+#include <pthread.h>
 
 //#include "tbb/tbb.h"
 
@@ -17,6 +18,10 @@
 
 
 //# define DEBUG 0
+//
+//
+
+constexpr int CAMERA_COUNT=4;
 
 
 
@@ -27,6 +32,19 @@ using cv::detail::MatchesInfo;
 using std::cout;
 using namespace std::chrono;
 using std::endl;
+
+pthread_mutex_t lock;
+
+Mat outputImage;
+
+
+struct ImageStitchData
+{
+  Mat dstImage;
+  Mat inputImage;
+  Mat homography;
+};
+
 
 class ParallelPixelTransfer: public ParallelLoopBody
 {
@@ -56,15 +74,46 @@ class ParallelPixelTransfer: public ParallelLoopBody
           }
           }
      }
-     
+
     ParallelPixelTransfer& operator=(const ParallelPixelTransfer&)
     {
       return *this;
     }
 
-
-
       };
+
+
+
+  void* WarpandStitchImages(void *arguments)
+  {
+    cout<<"\nthread started\n";
+
+    Mat imageUnwarped;
+    ImageStitchData *stitchArgs = (ImageStitchData*) arguments;
+
+    pthread_mutex_lock(&lock);
+
+    Size warpedImageSize = stitchArgs->dstImage.size();
+    //Size warpedImageSize = stitchArgs->dstImage.size();
+    // temp test
+    // Size warpedImageSize = Size(3260, 2811);
+    cout<<"\ndst size"<<warpedImageSize<<"\n";
+    cout<<"\n input image size"<<stitchArgs->inputImage.size();
+    cout<<"\n homography size"<<stitchArgs->homography.size();
+
+    warpPerspective (stitchArgs->inputImage, imageUnwarped, stitchArgs->homography,
+                     warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
+    cout<<"warped image , transferring pixels";
+
+    ParallelPixelTransfer parellelPixelTransfer(imageUnwarped, stitchArgs->dstImage);
+
+    parallel_for_(Range(0, imageUnwarped.rows * imageUnwarped.cols), parellelPixelTransfer);
+    pthread_mutex_unlock(&lock);
+
+    return NULL;
+    }
+
+
 
 
 class imageStitcher
@@ -158,39 +207,53 @@ class imageStitcher
    //imwrite("result.jpg", output);
   }
 
+
   Mat stitchImagesOnline(vector<Mat> images)
   {
+    cout<<"\nhere\n";
 
-   Mat outputImage(finalSize, CV_8U, Scalar(0));
+   Mat dstImage(finalSize, CV_8U, Scalar(0));
+   outputImage = dstImage;
    //Mat outputImage(finalSize, CV_8U, Scalar(0));
 
 
    size_t i;
 
+   pthread_t tid[CAMERA_COUNT];
+   cout<<"\nOnline stitching stated\n";
+   ImageStitchData imagedataVector[4];
+
    for(i=0; i < images.size(); i++)
    {
-   Mat ipImage = images[i];
-
-   //namedWindow("ip_image_online",WINDOW_NORMAL);
-   //resizeWindow("ip_image_online", 600, 600);
-   //imshow("ip_image_online", ipImage);
-   //waitKey(0);
-
-   //namedWindow("stitchedImageOnline",WINDOW_NORMAL);
-   //resizeWindow("stitchedImageOnline", 600, 600);
-   //imshow("stitchedImageOnline", outputImage);
-   //waitKey(0);
-   //imwrite("stitchedImage.jpg", outputImage);
-
-   Mat homography = allHomographies[i];
-   outputImage = stitchImageschessBoard(outputImage, ipImage, homography);
-
+   //Mat homography = allHomographies[i];
+   struct ImageStitchData imageStitchData;
+   imageStitchData.dstImage = outputImage;
+   imageStitchData.homography = allHomographies[i];
+   imageStitchData.inputImage = images[i];
+   imagedataVector[i] = imageStitchData;
+   // cout<<"size  :"<<imageStitchData.inputImage.size();
+   int error = pthread_create(&(tid[i]), NULL, WarpandStitchImages, (void *) &imagedataVector[i]);
+   if(error != 0)
+   {
+     cout<<"\nthread not created\n";
+      throw "thread not created";
+   }
 
   }
+   // cout<<"out of loop";
 
    //outputImage = getbiggestBoundingboxImage(outputImage);
 
    //imwrite("stitchedImage.jpg", outputImage);
+   for(i=0; i < images.size(); i++)
+    {
+     // cout<<"joining thread";
+     pthread_join(tid[i], NULL);
+   }
+
+   cout<<"\n joined threads\n";
+
+
     return outputImage;
    }
 
@@ -283,6 +346,7 @@ class imageStitcher
 
 
   }
+
   Mat stitchImageschessBoard(Mat stitchedImage, Mat ipImage, Mat Homography)
   {
 
