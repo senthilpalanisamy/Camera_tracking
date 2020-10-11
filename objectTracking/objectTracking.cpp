@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     // vector <string> trackerTypes(types, std::end(types));
 
     // Create a tracker
-    string trackerType = trackerTypes[2];
+    string trackerType = trackerTypes[6];
 
     Ptr<Tracker> tracker;
 
@@ -54,6 +54,7 @@ int main(int argc, char **argv)
         return 1; 
     } 
 
+
     // Read first frame 
     Mat frame; 
     bool ok = video.read(frame); 
@@ -73,13 +74,14 @@ int main(int argc, char **argv)
     {     
         // Start timer
         double timer = (double)getTickCount();
-        
+
         // Update the tracking result
         bool ok = tracker->update(frame, bbox);
-        
+
         // Calculate Frames per second (FPS)
         float fps = getTickFrequency() / ((double)getTickCount() - timer);
-        
+        cout<<"fps:"<<fps<<"\n";
+
         if (ok)
         {
             // Tracking success : Draw the tracked object
