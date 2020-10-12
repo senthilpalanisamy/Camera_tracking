@@ -14,7 +14,7 @@ int main (int argc, char *argv[])
 
     //Mat mat1 (cv::Size (5, 2), CV_32F, data, Mat::AUTO_STEP);
 
-    auto image = imread("test.png");
+    auto image = imread("test.jpeg");
     cout<<image.type()<<"\n";
     int row = 0;
     //float *p = mat1.ptr<float>(row);
@@ -29,7 +29,8 @@ int main (int argc, char *argv[])
 
     setenv("PYTHONPATH","../",1);
     Py_Initialize ();
-    pName = PyUnicode_FromString ("inference");
+    pName = PyUnicode_FromString ("deeplabFrameInference");
+    //pName = PyUnicode_FromString ("inference");
 
     pModule = PyImport_Import(pName);
 
@@ -43,7 +44,7 @@ int main (int argc, char *argv[])
     pArgs = PyTuple_New (1);
     PyTuple_SetItem (pArgs, 0, py_array);
 
-    pFunc = PyDict_GetItemString (pDict, (char*)"detect_mice_pose"); 
+    pFunc = PyDict_GetItemString (pDict, (char*)"inference_object.infer_mice_pose");
 
     if (PyCallable_Check (pFunc))
     {

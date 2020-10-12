@@ -16,7 +16,7 @@ int main()
   //py::module sys = py::module::import("sys");
   //py::print(sys.attr("path"));
 
-  py::module test = py::module::import("pythontest");
+  py::module test = py::module::import("deeplabFrameInference");
   auto result = test.attr("generate_list")(5);
   auto resultNew = py::cast<py::list>(result);
   // auto resultNew = static_cast<<int> > result;
