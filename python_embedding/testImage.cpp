@@ -29,7 +29,7 @@ int main (int argc, char *argv[])
 
     setenv("PYTHONPATH","../",1);
     Py_Initialize ();
-    pName = PyUnicode_FromString ("deeplabFrameInference");
+    pName = PyUnicode_FromString ("deeplabFrameInference.py");
     //pName = PyUnicode_FromString ("inference");
 
     pModule = PyImport_Import(pName);

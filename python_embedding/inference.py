@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import deeplabFrameInference as dlc
 
 def detect_mice_pose(image):
     print(image)

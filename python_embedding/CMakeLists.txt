@@ -7,7 +7,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 
 # INCLUDE_DIRECTORIES(/usr/include/python3.6m/) 
-# INCLUDE_DIRECTORIES(/usr/include/python3.7m/)
+INCLUDE_DIRECTORIES(/usr/include/python3.7m/)
 
 find_package(pybind11 REQUIRED)  # or `add_subdirectory(pybind11)`
 ##add_subdirectory(/home/senthilpalanisamy/software/pybind11)
@@ -15,5 +15,5 @@ find_package(pybind11 REQUIRED)  # or `add_subdirectory(pybind11)`
 add_executable(test2 test.cpp)
 add_executable(testImage testImage.cpp)
 ## pybind11_add_module(test test.cpp)
-target_link_libraries(test2 PRIVATE pybind11::embed)
-target_link_libraries(testImage PRIVATE pybind11::embed ${OpenCV_LIBS})
+target_link_libraries(test2 pybind11::embed ${OpenCV_LIBS})
+target_link_libraries(testImage pybind11::embed ${OpenCV_LIBS})
