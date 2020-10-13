@@ -51,6 +51,11 @@ int main()
   py::module module2 = py::module::import("deeplabFrameInference");
   module2.attr("infer")(0);
   module2.attr("infer")(0);
+     //auto image = imread("./test.jpeg");
+     //cout<<image.type()<<"\n";
+    // int row = 0;
+    // //float *p = mat1.ptr<float>(row);
+    // Vec3b *p = image.ptr<Vec3b>(row);
 
 
    // auto image = imread("../test.jpeg");
