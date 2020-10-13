@@ -12,6 +12,7 @@
 using std::cout;
 using std::vector;
 using std::list;
+using std::endl;
 using cv::imread;
 using cv::Vec3b;
 
@@ -25,32 +26,60 @@ int main()
   //
   //
   // setenv("PYTHONPATH","../",1);
-  // auto image = imread("../test.jpeg");
-  // cout<<image.type()<<"\n";
-   // int row = 0;
-   // float *p = mat1.ptr<float>(row);
-   // Vec3b *p = image.ptr<Vec3b>(row);
+  //
+  //
+  setenv("PYTHONPATH","../",1);
+  Py_Initialize ();
 
-   // npy_intp dims[3] = { image.rows, image.cols, 3 };
-  // PyObject *py_array;
 
-  // import_array();
+  // py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+   auto image = imread("../test.jpeg");
+   cout<<image.type()<<"\n";
+    int row = 0;
+    // float *p = mat1.ptr<float>(row);
+    Vec3b *p = image.ptr<Vec3b>(row);
 
-  // py_array = PyArray_SimpleNewFromData(3, dims, NPY_UINT8, p);
+    npy_intp dims[3] = { image.rows, image.cols, 3 };
+
+   PyObject *py_array, *pArgs, *pName, *pModule, *pFunc, *pDict;
+   import_array();
+
+
+
+   py_array = PyArray_SimpleNewFromData(3, dims, NPY_UINT8, p);
+   pName = PyUnicode_FromString ("deeplabFrameInference");
+   pModule = PyImport_Import(pName);
+   pDict = PyModule_GetDict(pModule);
   //
   //
   //
 
    // py_array = PyArray_SimpleNewFromData(3, dims, NPY_UINT8, p);
-  py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
   //py::exec("import deeplabFrameInference");
-  auto sysModule = py::module::import("sys");
-  py::print(sysModule.attr("path"));
-  py::module test = py::module::import("deeplabcut");
-  py::module module2 = py::module::import("deeplabFrameInference");
-  module2.attr("infer")(0);
-  module2.attr("infer")(0);
+  pArgs = PyTuple_New (1);
+  PyTuple_SetItem (pArgs, 0, py_array);
+  pFunc = PyDict_GetItemString (pDict, (char*)"infer");
+
+  if (PyCallable_Check (pFunc))
+  {
+            PyObject_CallObject(pFunc, pArgs);
+            PyObject_CallObject(pFunc, pArgs);
+            PyObject_CallObject(pFunc, pArgs);
+
+  } else
+  {
+            cout << "Function is not callable !" << endl;
+
+  }
+
+
+  // auto sysModule = py::module::import("sys");
+  // py::print(sysModule.attr("path"));
+  // py::module test = py::module::import("deeplabcut");
+  // py::module module2 = py::module::import("deeplabFrameInference");
+  // module2.attr("infer")(py_array);
+  // module2.attr("infer")(py_array);
      //auto image = imread("./test.jpeg");
      //cout<<image.type()<<"\n";
     // int row = 0;

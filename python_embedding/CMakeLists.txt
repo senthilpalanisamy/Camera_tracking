@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(example)
 # set(PYBIND11_PYTHON_VERSION 3.6)
-set(PYBIND11_PYTHON_VERSION 3.7 CACHE STRING "")
+set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "")
 find_package(OpenCV REQUIRED)  
 include_directories(${OpenCV_INCLUDE_DIRS})
 
@@ -9,7 +9,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # INCLUDE_DIRECTORIES(/usr/include/python3.6m/) 
 # INCLUDE_DIRECTORIES(/usr/include/python3.7m/)
 
-find_package(pybind11 REQUIRED)  # or `add_subdirectory(pybind11)`
+# find_package(pybind11 REQUIRED)  # or 
+add_subdirectory(third_party/pybind11)
 ##add_subdirectory(/home/senthilpalanisamy/software/pybind11)
 
 add_executable(test2 test.cpp)

@@ -130,14 +130,20 @@ class DLC_frame_inference:
 config='/home/senthil/demo-senthil-2020-08-09/config.yaml'
 inference_object = DLC_frame_inference(config)
 def infer(frame):
-  frame = cv2.imread('./test.jpeg')
+  #cv2.imshow('image', frame)
+  #cv2.waitkey(0)
+  #frame = cv2.imread('./test.jpeg')
   inference_object.infer_mice_pose(frame) 
+  cv2.imwrite('sample_test.jpeg', frame)
   # inference_object.infer_mice_pose(frame) 
 
-if __name__=='__main__':
-    infer(0)
-    infer(0)
-    infer(0)
+# if __name__=='__main__':
+#     infer(0)
+#     infer(0)
+#     infer(0)
+#     infer(0)
+#     infer(0)
+#     infer(0)
 
 # if __name__=='__main__':
 #     # frame = cv2.imread('./test.jpeg')
