@@ -2,15 +2,11 @@
 
 using cv::imread;
 
-DeepLabFrameInference::DeepLabFrameInference(int rows, int cols)
+DeepLabFrameInference::DeepLabFrameInference()
   {
 
 
-    dims[0] = rows;
-    dims[1] = cols;
-    dims[2] = 3;
-
-    setenv("PYTHONPATH","../src",1);
+    setenv("PYTHONPATH","./src",1);
     Py_Initialize ();
     import_array1();
     // Required for the C-API : http://docs.scipy.org/doc/numpy/reference/c-api.array.html#importing-the-api
@@ -25,6 +21,10 @@ DeepLabFrameInference::DeepLabFrameInference(int rows, int cols)
 
   void DeepLabFrameInference::predictPoseForImage(Mat& image)
    {
+
+    dims[0] = image.rows;
+    dims[1] = image.cols;
+    dims[2] = 3;
 
     Vec3b *p = image.ptr<Vec3b>(0);
     py_array = PyArray_SimpleNewFromData(3, dims, NPY_UINT8, p);

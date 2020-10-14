@@ -8,9 +8,9 @@ int main (int argc, char *argv[])
 
     //Mat mat1 (cv::Size (5, 2), CV_32F, data, Mat::AUTO_STEP);
 
-    auto image = imread("../samples/test.jpeg");
+    auto image = imread("./samples/test.jpeg");
     cout<<image.type()<<"\n";
-    auto dlc = DeepLabFrameInference(360, 640);
+    auto dlc = DeepLabFrameInference();
     dlc.predictPoseForImage(image);
     dlc.predictPoseForImage(image);
 

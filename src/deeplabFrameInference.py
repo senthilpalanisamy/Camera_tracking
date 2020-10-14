@@ -127,7 +127,7 @@ class DLC_frame_inference:
 
 
 
-config='/home/senthil/demo-senthil-2020-08-09/config.yaml'
+config='./models/demo-senthil-2020-08-09/config.yaml'
 inference_object = DLC_frame_inference(config)
 def infer(frame):
   #cv2.imshow('image', frame)

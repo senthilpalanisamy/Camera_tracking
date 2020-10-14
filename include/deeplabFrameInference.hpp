@@ -24,7 +24,7 @@ class DeepLabFrameInference
   PyObject *pModule, *pFunc, *py_array, *pName, *pDict, *pArgs;
   npy_intp dims[3] = {0, 0, 0};
   public:
-  DeepLabFrameInference(int rows, int cols);
+  DeepLabFrameInference();
   void predictPoseForImage(Mat& image);
   ~DeepLabFrameInference();
 };
