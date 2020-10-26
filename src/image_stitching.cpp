@@ -17,11 +17,10 @@
 //using tbb::parallel_for;
 
 
-//# define DEBUG 0
+// # define DEBUG 0
 //
 //
-
-constexpr int CAMERA_COUNT=4;
+using std::to_string;
 
 
 
@@ -158,9 +157,11 @@ class imageStitcher
 
    for(auto& h:allHomographies)
    {
+     h = h.inv();
    double scale  = h.at<double>(2,2);
    h.at<float>(0,2) = h.at<float>(0,2)  - scale * min_x;
    h.at<double>(1,2) = h.at<double>(1,2) - scale * min_y;
+   h = h.inv();
 
    }
   }
@@ -175,7 +176,7 @@ class imageStitcher
 
    size_t i;
 
-   pthread_t tid[CAMERA_COUNT];
+   pthread_t tid[images.size()];
    ImageStitchData imagedataVector[4];
 
    for(i=0; i < images.size(); i++)
@@ -267,6 +268,8 @@ class imageStitcher
        drawChessboardCorners( image, Size(9,6), Mat(detectedPoints), found  );
 
        H = findHomography( pointsMapping, detectedPoints, RANSAC);
+       // look at this once more
+       // H = findHomography( detectedPoints, pointsMapping, RANSAC);
 
        #ifdef DEBUG
        namedWindow("image",WINDOW_NORMAL);
@@ -306,23 +309,7 @@ class imageStitcher
     parallel_for_(Range(0, imageUnwarped.rows * imageUnwarped.cols), parellelPixelTransfer);
     // cout<<"ending parallel for\n";
 
-     //for(i=0; i < imageUnwarped.size().height; i++)
-     // {
-     //   uchar * imageUnwarpedPtr = imageUnwarped.ptr(i);
-     //   uchar * stitchedImagePtr = stitchedImage.ptr(i);
-     //    for(j=0; j < imageUnwarped.size().width;j++)
-     //    {
-     //      // May be a weak check
-     //      if(stitchedImagePtr[j]==0)
-     //      {
-     //       stitchedImagePtr[j] = imageUnwarpedPtr[j];
-     //      }
-     //      }
-     // }
-
     #ifdef DEBUG
-
-
     namedWindow("StitchedImage",WINDOW_NORMAL);
     resizeWindow("StitchedImage", 600, 600);
     imshow("StitchedImage", stitchedImage);
@@ -331,7 +318,6 @@ class imageStitcher
     namedWindow("warpedImage",WINDOW_NORMAL);
     resizeWindow("warpedImage", 600, 600);
     imshow("warpedImage", imageUnwarped);
-
     waitKey(0);
     #endif
 
@@ -428,98 +414,34 @@ class imageStitcher
     return finalImage;
    }
 
-  Mat computeHomography(Mat image1, Mat image2)
-  {
-   vector<Mat> images;
-   images.push_back(image1);
-   images.push_back(image2);
-
-
-  vector<Mat> descriptors;
-  size_t i=0;
-  for(;i<2; i++)
-  {
-    Mat img_descriptor;
-    descriptors.push_back(img_descriptor);
-  }
-  vector<vector<KeyPoint>> keypoints;
-
-  for(i=0;i<2; i++)
-  {
-    vector<KeyPoint> imgKeypoint;
-    keypoints.push_back(imgKeypoint);
-  }
-  vector<MatchesInfo> pairwise_matches;
-
-  //auto detector = ORB::create();
-  auto detector = SIFT::create();
-  size_t num_images = 2;
-
-  for(i=0; i < 2; i++)
-   {
-    detector->detectAndCompute( images[i], cv::noArray(), keypoints[i], descriptors[i] );
-   } 
-   BFMatcher brute_force_matcher = cv::BFMatcher(NORM_L2, true);
-   vector< cv::DMatch > matches;
-   brute_force_matcher.match(descriptors[0], descriptors[1], matches);
-   const float ratio_thresh = 0.7f;
-
-    // debugging
-    #ifdef DEBUG
-
-    namedWindow("matched_image",WINDOW_NORMAL);
-    resizeWindow("matched_image", 600, 600);
-    Mat img_matches;
-    drawMatches( images[0], keypoints[0], images[1], keypoints[1], matches, img_matches, Scalar::all(-1),
-                 Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    imshow("matched_image", img_matches);
-    //imwrite("mathced_image.jpg", img_matches);
-    waitKey(0);
-    #endif
-
-    std::vector<Point2f> obj;
-    std::vector<Point2f> scene;
-    for( size_t i = 0; i < matches.size(); i++ )
-    {
-        //-- Get the keypoints from the good matches
-        obj.push_back(keypoints[0][matches[i].queryIdx].pt);
-        scene.push_back(keypoints[1][matches[i].trainIdx].pt);
-    }
-    Mat H = findHomography( obj, scene, RANSAC );
-    return H;
-
-  }
-
-
-
-
 };
 
 int main(void)
 {
-  //Mat img1 = cv::imread("../data/boat1.jpg", 0);
-  //Mat img2 = cv::imread("../data/boat2.jpg", 0);
-  //Mat img3 = cv::imread("../data/boat3.jpg", 0);
-  //Mat img4 = cv::imread("../data/boat4.jpg", 0);
-  //Mat img5 = cv::imread("../data/boat5.jpg", 0);
-  //Mat img6 = cv::imread("../data/boat6.jpg", 0);
-  //Mat img1 = cv::imread("../data/newspaper1.jpg", 0);
-  //Mat img2 = cv::imread("../data/newspaper2.jpg", 0);
-  //Mat img3 = cv::imread("../data/newspaper3.jpg", 0);
-  //Mat img4 = cv::imread("../data/newspaper4.jpg", 0);
   cout<<"started capture";
-  frameGrabber imageTransferObj("../data/camera2.fmt");
+  frameGrabber imageTransferObj("./config/camera2.fmt");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;
   images.push_back(imageTransferObj.image0);
-  images.push_back(imageTransferObj.image2);
-  images.push_back(imageTransferObj.image1);
-  images.push_back(imageTransferObj.image3);
+  //images.push_back(imageTransferObj.image2);
+  //images.push_back(imageTransferObj.image1);
+
+  Mat src1 = imageTransferObj.image3;
+  double angle1 = 180;
+  cv::Point2f center1((src1.cols-1)/2.0, (src1.rows-1)/2.0);
+  cv::Mat rot1 = cv::getRotationMatrix2D(center1, angle1, 1.0);
+  // determine bounding rectangle, center not relevant
+  cv::Rect2f bbox1 = cv::RotatedRect(cv::Point2f(), src1.size(), angle1).boundingRect2f();
+  // adjust transformation matrix
+  rot1.at<double>(0,2) += bbox1.width/2.0 - src1.cols/2.0;
+  rot1.at<double>(1,2) += bbox1.height/2.0 - src1.rows/2.0;
+
+  cv::Mat dst1;
+  cv::warpAffine(src1, dst1, rot1, bbox1.size()); 
+
+
+  images.push_back(dst1);
   cout<<"ended capture";
-  //images.push_back(img3);
-  //images.push_back(img4);
-  //images.push_back(img5);
-  //images.push_back(img6);
   imageStitcher imgStitcher(images);
   Mat stitchedImage;
 
@@ -528,34 +450,57 @@ int main(void)
   cout<<"OPENCV version"<<CV_VERSION;
   cout<<"Major version"<<CV_MAJOR_VERSION;
   cout<<"\nBuild Information:"<<getBuildInformation();
-  while(true)
-  {
-    auto start = high_resolution_clock::now();
-    imageTransferObj.transferAllImagestoPC();
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(stop - start);
-    cout<<"image acquisition time:"<<duration.count()<<endl;
-    vector<Mat> images;
-    images.push_back(imageTransferObj.image0);
-    images.push_back(imageTransferObj.image2);
-    images.push_back(imageTransferObj.image1);
-    images.push_back(imageTransferObj.image3);
+  //imageTransferObj.displayAllImages();
 
-    cout<<"\nstitching image\n";
-    start = high_resolution_clock::now();
-    stitchedImage = imgStitcher.stitchImagesOnline(images);
-    stop = high_resolution_clock::now();
-    duration = duration_cast<milliseconds>(stop - start);
-    cout<<"Image stitching time:"<<duration.count()<<endl;
-    imshow("stitchedImageop", stitchedImage);
-    if(waitKey(1) >= 0)
-      break;
-    imageTransferObj.displayAllImages();
-    imwrite("outputimage.png", stitchedImage);
-    imwrite("image1.png", images[0]);
-    imwrite("image2.png", images[1]);
-    imwrite("image3.png", images[2]);
-    imwrite("image4.png", images[3]);
-}
+   while(true)
+   {
+     auto start = high_resolution_clock::now();
+     imageTransferObj.transferAllImagestoPC();
+     auto stop = high_resolution_clock::now();
+     auto duration = duration_cast<milliseconds>(stop - start);
+     cout<<"image acquisition time:"<<duration.count()<<endl;
+     vector<Mat> images;
+     images.push_back(imageTransferObj.image0);
+     //images.push_back(imageTransferObj.image2);
+     //images.push_back(imageTransferObj.image1);
+     
+      // for new setup
+      double angle = 180;
+
+      // get rotation matrix for rotating the image around its center in pixel coordinates
+      Mat src = imageTransferObj.image3;
+      cv::Point2f center((src.cols-1)/2.0, (src.rows-1)/2.0);
+      cv::Mat rot = cv::getRotationMatrix2D(center, angle, 1.0);
+      // determine bounding rectangle, center not relevant
+      cv::Rect2f bbox = cv::RotatedRect(cv::Point2f(), src.size(), angle).boundingRect2f();
+      // adjust transformation matrix
+      rot.at<double>(0,2) += bbox.width/2.0 - src.cols/2.0;
+      rot.at<double>(1,2) += bbox.height/2.0 - src.rows/2.0;
+
+      cv::Mat dst;
+      cv::warpAffine(src, dst, rot, bbox.size()); 
+      //  
+
+      images.push_back(dst);
+
+     cout<<"\nstitching image\n";
+     start = high_resolution_clock::now();
+     stitchedImage = imgStitcher.stitchImagesOnline(images);
+     stop = high_resolution_clock::now();
+     duration = duration_cast<milliseconds>(stop - start);
+     cout<<"Image stitching time:"<<duration.count()<<endl;
+     imshow("stitchedImageop", stitchedImage);
+     if(waitKey(1) >= 0)
+       break;
+     //imageTransferObj.displayAllImages();
+
+     imwrite("outputimage.png", stitchedImage);
+
+     // for(int i=0; i <images.size(); i++) 
+     // {
+     //  imwrite("image"+to_string(i)+".png", images[i]);
+
+     // }
+ } 
 
 }
