@@ -64,7 +64,6 @@ class ParallelPixelTransfer: public ParallelLoopBody
         int i = r / unwarpedImage.cols;
         int j = r % unwarpedImage.cols;
 
-          // May be a weak check
           if(stitchedImage.ptr<uchar>(i)[j] == 0)
           {
             stitchedImage.ptr<uchar>(i)[j] = unwarpedImage.ptr<uchar>(i)[j];
@@ -112,15 +111,38 @@ class imageStitcher
   vector<Mat> allHomographies;
   int min_x, max_x, min_y, max_y;
 
+  vector<Point2f> initialiseChessBoardPoints(Size opSize, int boardLength=9, 
+                                             int boardWidth=6)
+  {
+
+     float squareSize = 30;
+     int opImgWidth = opSize.width, opImgHeight = opSize.height;
+     float chessCenterx = opImgWidth / 2.0 - boardLength / 2.0 * squareSize;
+     float chessCenterY = opImgHeight / 2.0 - boardWidth/ 2.0 * squareSize;
+     vector<Point2f> sourcePoints;
+
+
+
+     for(int i=0; i < boardLength; i++)
+     {
+       for(int j=0; j< boardWidth; j++)
+       {
+         Point2f boardPoint;
+         boardPoint.x = chessCenterx + i * squareSize;
+         boardPoint.y = chessCenterY + j * squareSize;
+         sourcePoints.push_back(boardPoint);
+
+       }
+     }
+  return sourcePoints;
+  }
+
   imageStitcher(vector<Mat> images)
   {
    size_t i, j;
-   float squareSize = 30;
-   int boardLength = 9, boardWidth = 6;
    int opimgWidth = images[0].cols * 2, opimgheight = images[0].rows * 2;
    opSize = Size(opimgWidth, opimgheight);
-   float chessCenterx = opimgWidth / 2.0 - boardLength / 2.0 * squareSize;
-   float chessCenterY = opimgheight / 2.0 - boardWidth/ 2.0 * squareSize;
+   pointsMapping = initialiseChessBoardPoints(opSize);
 
 
    min_x = std::numeric_limits<int>::max();
@@ -128,17 +150,6 @@ class imageStitcher
    min_y = std::numeric_limits<int>::max();
    max_y = std::numeric_limits<int>::min();
 
-   for(i=0; i < boardLength; i++)
-   {
-     for(j=0; j< boardWidth; j++)
-     {
-       Point2f boardPoint;
-       boardPoint.x = chessCenterx + i * squareSize;
-       boardPoint.y = chessCenterY + j * squareSize;
-       pointsMapping.push_back(boardPoint);
-
-     }
-   }
 
    Mat stitchedImage(opSize, CV_8UC1, Scalar(0));
 
@@ -151,8 +162,8 @@ class imageStitcher
    allHomographies.push_back(homography);
    stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
    }
-   Mat output;
-   output = getbiggestBoundingboxImage(stitchedImage);
+
+   getbiggestBoundingboxImage(stitchedImage);
 
 
    for(auto& h:allHomographies)
@@ -169,7 +180,6 @@ class imageStitcher
 
   Mat stitchImagesOnline(vector<Mat> images)
   {
-    cout<<"\nhere\n";
 
    Mat dstImage(finalSize, CV_8U, Scalar(0));
    outputImage = dstImage;
@@ -189,7 +199,6 @@ class imageStitcher
    int error = pthread_create(&(tid[i]), NULL, WarpandStitchImages, (void *) &imagedataVector[i]);
    if(error != 0)
    {
-     cout<<"\nthread not created\n";
       throw "thread not created";
    }
 
@@ -203,7 +212,7 @@ class imageStitcher
 
 
   private:
-  Mat getbiggestBoundingboxImage(Mat image)
+  void getbiggestBoundingboxImage(const Mat& image)
   {
 
 
@@ -237,20 +246,8 @@ class imageStitcher
       }
 
     }
-
-    Mat finalImage(max_y - min_y, max_x- min_x, CV_8U);
-    //Mat finalImage(max_x - min_x, max_y- min_y, CV_8U);
-    //finalSize = Size(max_x-min_x, max_y-min_y);
-    finalSize = finalImage.size();
-    for(i=0; i < finalImage.size().height; i++)
-    {
-      for(j=0; j< finalImage.size().width; j++)
-      {
-        finalImage.at<char>(i,j) = image.at<char>(min_y+i, min_x + j);
-      }
-    }
-    return finalImage;
-
+  finalSize.width = max_x - min_x;
+  finalSize.height = max_y - min_y;
 
   }
   Mat computeHomographyChessBoard(Mat image)
@@ -268,8 +265,6 @@ class imageStitcher
        drawChessboardCorners( image, Size(9,6), Mat(detectedPoints), found  );
 
        H = findHomography( pointsMapping, detectedPoints, RANSAC);
-       // look at this once more
-       // H = findHomography( detectedPoints, pointsMapping, RANSAC);
 
        #ifdef DEBUG
        namedWindow("image",WINDOW_NORMAL);
@@ -277,15 +272,10 @@ class imageStitcher
        imshow("image", image);
        waitKey(0);
        #endif
-       // H = findHomography( detectedPoints, pointsMapping, 0);
     }
     else
     {
       throw "Chess board not detected";
-      // raise error
-      //
-    //cout<<"status"<<found;
-    //return image;
     }
 
    return H;
@@ -324,95 +314,6 @@ class imageStitcher
     return stitchedImage;
 
   }
-  Mat stitchImages(Mat image1, Mat image2, Mat Homography)
-   {
-
-    Mat image2_aligned, dst;
-    Size imgSize = image1.size();
-    //imgSize.width = imgSize.width + image2.size().width; 
-    imgSize = imgSize + image2.size();
-    int j,i;
-
-    warpPerspective (image2, image2_aligned, Homography, imgSize,INTER_LINEAR + WARP_INVERSE_MAP);
-    // check if this logic is little rudimentary
-    for(i=0; i < image1.size().height; i++)
-     {
-        for(j=0; j < image1.size().width;j++)
-        {
-          if(image1.at<char>(i,j)!=0)
-          {
-           //image2_aligned(i, j) = images[0](i, j);
-           image2_aligned.at<char>(i,j) = image1.at<char>(i,j);
-          }
-          }
-     }
-
-    threshold( image2_aligned, dst, 0, 255,THRESH_BINARY);
-    //imshow("stiched", image2_aligned);
-    //imshow("thresholded", dst);
-    //waitKey(0);
-
-    int min_x = std::numeric_limits<int>::max();
-    int max_x = std::numeric_limits<int>::min();
-    int min_y = std::numeric_limits<int>::max();
-    int max_y = std::numeric_limits<int>::min();
-    for(i=0; i < dst.size().height; i++)
-    {
-      for(j=0; j < dst.size().width; j++)
-      {
-        if(dst.at<char>(i,j) !=0)
-        {
-          if(i < min_y)
-          {
-            min_y = i;
-          }
-           if(i > max_y)
-           {
-             max_y = i;
-           }
-
-           if(j < min_x)
-           {
-             min_x = j;
-           }
-
-           if(j > max_x)
-           {
-             max_x = j;
-           }
-        }
-
-      }
-
-    }
-
-    Mat finalImage(max_y - min_y, max_x- min_x, CV_8U);
-    for(i=0; i < finalImage.size().height; i++)
-    {
-      for(j=0; j< finalImage.size().width; j++)
-      {
-        finalImage.at<char>(i,j) = image2_aligned.at<char>(min_y+i, min_x + j);
-      }
-    }
-
-    //imshow("aligned", image2_aligned);
-    //imshow("thresholed", dst);
-    #ifdef DEBUG
-    //namedWindow("WarpedImage",WINDOW_NORMAL);
-
-    namedWindow("WarpedImage",WINDOW_NORMAL);
-    namedWindow("StitchedImage",WINDOW_NORMAL);
-
-    resizeWindow("WarpedImage", 600, 600);
-    resizeWindow("StitchedImage", 600, 600);
-
-    imshow("WarpedImage", image2_aligned);
-    imshow("StitchedImage", finalImage);
-    waitKey(0);
-    #endif
-
-    return finalImage;
-   }
 
 };
 
@@ -496,11 +397,6 @@ int main(void)
 
      imwrite("outputimage.png", stitchedImage);
 
-     // for(int i=0; i <images.size(); i++) 
-     // {
-     //  imwrite("image"+to_string(i)+".png", images[i]);
-
-     // }
  } 
 
 }
