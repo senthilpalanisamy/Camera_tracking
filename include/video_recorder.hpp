@@ -3,16 +3,21 @@
 
 #include "opencv2/opencv.hpp"
 using cv::Mat;
-using cv::Size
+using cv::Size;
+using std::string;
+using std::vector;
+using cv::VideoWriter;
 
 class videoRecorder
 {
+
+  vector<VideoWriter> allWriters;
   public:
   videoRecorder(const int writerCount, const string baseName,
                 const Size imageSize, double fps=30.0,
-		const string ouputPath="./results");
-  writeFrames(const vector<Mat> newFrames) const;
+		const string outputPath="./results");
+  void writeFrames(const vector<Mat>& newFrames);
   ~videoRecorder();
-}
+};
 
 #endif

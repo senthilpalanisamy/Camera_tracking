@@ -55,12 +55,13 @@ class frameGrabber
                        * pxd_imageYdim()    // vertical resolution
                        * sizeof(unsigned char));
    int odata;
-   odata = pxd_getGPIn(0x1,    // select PIXCI(R) unit 1
+   int pixciUnit = 1 << 4;
+   odata = pxd_getGPIn(pixciUnit,    // select PIXCI(R) unit 1
                         0);     // reserved
 
    cout<<"\nwaiting for trigger\n";
 
-   while (odata == pxd_getGPIn(0x1, 0));
+   while (odata == pxd_getGPIn(pixciUnit, 0));
    cout<<"\nreceived trigger\n";
 
    for(int i=0; i < 4; i++)
@@ -125,6 +126,6 @@ class frameGrabber
 
  int main(void)
  {
-   frameGrabber imageTransferObj("../data/camera2.fmt");
+   frameGrabber imageTransferObj("./config/trigger3.fmt");
    imageTransferObj.writeImagestoPC();
  }

@@ -2,19 +2,25 @@
 #include "video_recorder.hpp"
 
 using std::to_string;
+constexpr int WAIT_TIME=100; 
 
 
 videoRecorder::videoRecorder(const int writerCount, const string baseName,
                 const Size imageSize, double fps,
 		const string outputPath)
 {
-  string fileFormat=".h265";
+  string fileFormat=".mp4";
+  //int fourcc = cv::cv::CV_FOURCC(*"mp4v");
+  //int fourcc = cv::VideoWriter_fourcc(*"X264");
+  //int fourcc = VideoWriter::fourcc('a', 'v', 'c', '1');  
+  int fourcc = VideoWriter::fourcc('M', 'P', '4', 'V');       
+
+
 
   for(int i=0; i < writerCount; ++i)
   { 
     string filePath = outputPath + baseName + to_string(i) + fileFormat;
-    allWriters.emplace_back(filePath, cv::VideoWriter::fourcc('H', '2', '6', '5'),
-		            fps, imageSize);
+    allWriters.emplace_back(filePath, fourcc, fps, imageSize, false);
   }
 }
 
@@ -29,6 +35,11 @@ void videoRecorder::writeFrames(const vector<Mat>& newFrames)
 videoRecorder::~videoRecorder()
 {
 
+ for(auto writer: allWriters)
+ {
+	 writer.release();
+ }
+
 }
 
 
@@ -42,18 +53,27 @@ int main()
    auto recorder = videoRecorder(4, "sample_trial", image0.size(),
 		                 30);
 
-   for(int i=0; i<100; i++)
+   while(true) 
    {
 
-
+    imageTransferObj.transferAllImagestoPC();
     vector<Mat> images;
 
     images.push_back(imageTransferObj.image0);
     images.push_back(imageTransferObj.image1);
     images.push_back(imageTransferObj.image2);
     images.push_back(imageTransferObj.image3);
+
+    for(int i=0; i < 4; ++i)
+    {
+     imshow("image"+to_string(i), images[i]);
+     //waitKey(WAIT_TIME);
+    }
 	 
     recorder.writeFrames(images);
+    // if(cv::waitKey(33) == 
+    if ( (char)27 == (char) cv::waitKey(WAIT_TIME) ) 
+       break;
 
  
    }
