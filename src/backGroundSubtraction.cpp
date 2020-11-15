@@ -4,38 +4,25 @@
 
 
 
-using namespace std;
-using namespace cv;
-using namespace cv::cuda;
 
 
-BackGroundSubtractor::BackGroundSubtractor(Method m, const Mat& firstImage, 
+BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
                                            bool isVisualise_)
   {
 
     GpuMat d_frame(firstImage);
+    imshow("image", firstImage);
+    waitKey(0);
     if(m == MOG)
     {
       mog = cuda::createBackgroundSubtractorMOG();
-    }
-    else
-    {
-      mog = cuda::createBackgroundSubtractorMOG2();
-    }
-
-    if(m = MOG)
-    {
       mog->apply(d_frame, d_fgmask, 0.01);
     }
     else
     {
-
-      mog2->apply(d_frame, d_fgmask);
-
+      mog = cuda::createBackgroundSubtractorMOG2();
+      mog->apply(d_frame, d_fgmask);
     }
-
-    d_frame.upload(firstImage);
-
 
     isVisualise = isVisualise_;
 
@@ -46,42 +33,79 @@ BackGroundSubtractor::BackGroundSubtractor(Method m, const Mat& firstImage,
       namedWindow("foreground image", WINDOW_NORMAL);
       namedWindow("mean background image", WINDOW_NORMAL);
     }
+    m = m_;
   }
 
-  void BackgroundSubtractor::processImage()
+  Mat BackGroundSubtractor::processImage(const Mat& nextFrame)
   {
+
+    d_frame.upload(nextFrame);
     if(m == MOG)
     {
         mog->apply(d_frame, d_fgmask, 0.01);
-        mog->getBackgroundImage(d_bgimg);
     }
     else
     {
-       mog2->apply(d_frame, d_fgmask);
-       mog2->getBackgroundImage(d_bgimg);
-
+       mog->apply(d_frame, d_fgmask);
     }
 
-    d_fgimg.create(d_frame.size(), d_frame.type());
-    d_fgimg.setTo(Scalar::all(0));
-    d_frame.copyTo(d_fgimg, d_fgmask);
+    mog->getBackgroundImage(d_bgimg);
+
+
 
     d_fgmask.download(fgmask);
-    d_fgimg.download(fgimg);
-    if (!d_bgimg.empty())
-        d_bgimg.download(bgimg);
 
     if(isVisualise)
     {
-      visualiseImage()
+      visualiseImage(nextFrame);
     }
+    return fgmask;
   }
 
-  void BackGroundSubtractor::visualiseImage()
+  void BackGroundSubtractor::visualiseImage(const Mat& nextFrame)
   {
-  imshow("image", frame);
+
+  d_fgimg.create(d_frame.size(), d_frame.type());
+  d_fgimg.setTo(Scalar::all(0));
+  d_frame.copyTo(d_fgimg, d_fgmask);
+
+   d_fgimg.download(fgimg);
+   if (!d_bgimg.empty())
+     d_bgimg.download(bgimg);
+
+
+  imshow("image", nextFrame);
   imshow("foreground mask", fgmask);
   imshow("foreground image", fgimg);
   if (!bgimg.empty())
       imshow("mean background image", bgimg);
   }
+
+int main()
+{
+  string input_video = "/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial0.mp4";
+  VideoCapture cap(input_video);
+
+  Mat frame;
+  Method method=MOG;
+  if(!cap.isOpened())
+  {
+    cout<<"video cannot be opened";
+  }
+
+  cap.read(frame);
+
+  BackGroundSubtractor backgroundSubtractor(method, frame, true);
+
+  
+  while(cap.read(frame))
+  {
+    backgroundSubtractor.processImage(frame);
+    cout<<"here";
+  }
+
+  return 0;
+
+
+
+}

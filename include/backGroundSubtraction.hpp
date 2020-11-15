@@ -8,6 +8,9 @@
 #include "opencv2/highgui.hpp"
 
 using cv::Mat;
+using namespace std;
+using namespace cv;
+using namespace cv::cuda;
 
 enum Method
 {
@@ -21,12 +24,13 @@ class BackGroundSubtractor
   GpuMat d_frame, d_fgmask, d_fgimg, d_bgimg;
   bool isVisualise;
   Mat fgmask, fgimg, bgimg;
-  Ptr<BackgroundSubtractor> mog;
+  Ptr<BackgroundSubtractor> mog, mog2;
+  Method m;
 
   public:
-  BackGroundSubtraction(Method m, const Mat& firstImage, bool isVisualise_);
-  void processImage();
-  void visualiseImage()
+  BackGroundSubtractor(Method m, const Mat& firstImage, bool isVisualise_);
+  Mat processImage(const Mat& nextFrame);
+  void visualiseImage(const Mat& nextFrame);
 };
 
 
