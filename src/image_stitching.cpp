@@ -17,7 +17,7 @@
 //using tbb::parallel_for;
 
 
-// # define DEBUG 0
+# define DEBUG 0
 //
 //
 using std::to_string;
@@ -88,9 +88,14 @@ class ParallelPixelTransfer: public ParallelLoopBody
     ImageStitchData *stitchArgs = (ImageStitchData*) arguments;
 
     pthread_mutex_lock(&lock);
+
     Size warpedImageSize = stitchArgs->dstImage.size();
+    // warpPerspective (stitchArgs->inputImage, imageUnwarped, stitchArgs->homography,
+    //                  warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
+
     warpPerspective (stitchArgs->inputImage, imageUnwarped, stitchArgs->homography,
-                     warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
+                     warpedImageSize, INTER_LINEAR);
+
     ParallelPixelTransfer parellelPixelTransfer(imageUnwarped, stitchArgs->dstImage);
     parallel_for_(Range(0, imageUnwarped.rows * imageUnwarped.cols), parellelPixelTransfer);
     pthread_mutex_unlock(&lock);
@@ -111,25 +116,25 @@ class imageStitcher
   vector<Mat> allHomographies;
   int min_x, max_x, min_y, max_y;
 
-  vector<Point2f> initialiseChessBoardPoints(Size opSize, int boardLength=9, 
-                                             int boardWidth=6)
+  vector<Point2f> initialiseChessBoardPoints(Size opSize, int boardWidth=9, 
+                                             int boardHeight=6)
   {
 
      float squareSize = 30;
      int opImgWidth = opSize.width, opImgHeight = opSize.height;
-     float chessCenterx = opImgWidth / 2.0 - boardLength / 2.0 * squareSize;
-     float chessCenterY = opImgHeight / 2.0 - boardWidth/ 2.0 * squareSize;
+     float chessCenterx = opImgWidth / 2.0 - boardWidth / 2.0 * squareSize;
+     float chessCenterY = opImgHeight / 2.0 - boardHeight / 2.0 * squareSize;
      vector<Point2f> sourcePoints;
 
 
 
-     for(int i=0; i < boardLength; i++)
+     for(int i=boardHeight-1; i >= 0; --i)
      {
-       for(int j=0; j< boardWidth; j++)
+       for(int j=boardWidth-1; j >= 0; --j)
        {
          Point2f boardPoint;
-         boardPoint.x = chessCenterx + i * squareSize;
-         boardPoint.y = chessCenterY + j * squareSize;
+         boardPoint.x = chessCenterx + j * squareSize;
+         boardPoint.y = chessCenterY + i * squareSize;
          sourcePoints.push_back(boardPoint);
 
        }
@@ -140,7 +145,7 @@ class imageStitcher
   imageStitcher(vector<Mat> images)
   {
    size_t i, j;
-   int opimgWidth = images[0].cols * 2, opimgheight = images[0].rows * 2;
+   size_t opimgWidth = images[0].cols * 2, opimgheight = images[0].rows * 2;
    opSize = Size(opimgWidth, opimgheight);
    pointsMapping = initialiseChessBoardPoints(opSize);
 
@@ -163,16 +168,31 @@ class imageStitcher
    stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
    }
 
+   imwrite("stich_calibrate.png", stitchedImage);
+
    getbiggestBoundingboxImage(stitchedImage);
+
+
+   // Debugging
+   min_x = 0;
+   min_y = 0;
+   max_x = stitchedImage.cols;
+   max_y = stitchedImage.rows;
+
+  finalSize.width = max_x;
+  finalSize.height = max_y;
+
+  // Debugging
 
 
    for(auto& h:allHomographies)
    {
-     h = h.inv();
+
+   // h = h.inv();
    double scale  = h.at<double>(2,2);
-   h.at<float>(0,2) = h.at<float>(0,2)  - scale * min_x;
+   h.at<double>(0,2) = h.at<double>(0,2) - scale * min_x;
    h.at<double>(1,2) = h.at<double>(1,2) - scale * min_y;
-   h = h.inv();
+   // h = h.inv();
 
    }
   }
@@ -262,9 +282,10 @@ class imageStitcher
     {
        cornerSubPix( image, detectedPoints, Size(winSize,winSize),
                                    Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 30, 0.0001  ));
-       drawChessboardCorners( image, Size(9,6), Mat(detectedPoints), found  );
+       drawChessboardCorners( image, Size(9,6), Mat(detectedPoints), found);
 
-       H = findHomography( pointsMapping, detectedPoints, RANSAC);
+       //H = findHomography( pointsMapping, detectedPoints, RANSAC);
+       H = findHomography( detectedPoints, pointsMapping, RANSAC, 1);
 
        #ifdef DEBUG
        namedWindow("image",WINDOW_NORMAL);
@@ -291,7 +312,8 @@ class imageStitcher
 
     Size warpedImageSize = stitchedImage.size();
 
-    warpPerspective (ipImage, imageUnwarped, Homography, warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
+    // warpPerspective (ipImage, imageUnwarped, Homography, warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
+    warpPerspective (ipImage, imageUnwarped, Homography, warpedImageSize,INTER_LINEAR);
 
     ParallelPixelTransfer parellelPixelTransfer(imageUnwarped, stitchedImage);
 
@@ -320,28 +342,32 @@ class imageStitcher
 int main(void)
 {
   cout<<"started capture";
-  frameGrabber imageTransferObj("./config/camera2.fmt");
+  frameGrabber imageTransferObj("./config/camera3.fmt");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;
   images.push_back(imageTransferObj.image0);
-  //images.push_back(imageTransferObj.image2);
-  //images.push_back(imageTransferObj.image1);
+  images.push_back(imageTransferObj.image1);
+  images.push_back(imageTransferObj.image2);
+  images.push_back(imageTransferObj.image3);
 
-  Mat src1 = imageTransferObj.image3;
-  double angle1 = 180;
-  cv::Point2f center1((src1.cols-1)/2.0, (src1.rows-1)/2.0);
-  cv::Mat rot1 = cv::getRotationMatrix2D(center1, angle1, 1.0);
-  // determine bounding rectangle, center not relevant
-  cv::Rect2f bbox1 = cv::RotatedRect(cv::Point2f(), src1.size(), angle1).boundingRect2f();
-  // adjust transformation matrix
-  rot1.at<double>(0,2) += bbox1.width/2.0 - src1.cols/2.0;
-  rot1.at<double>(1,2) += bbox1.height/2.0 - src1.rows/2.0;
+     imshow("image0", images[0]);
+     waitKey(0);
 
-  cv::Mat dst1;
-  cv::warpAffine(src1, dst1, rot1, bbox1.size()); 
+  // Mat src1 = imageTransferObj.image3;
+  // double angle1 = 180;
+  // cv::Point2f center1((src1.cols-1)/2.0, (src1.rows-1)/2.0);
+  // cv::Mat rot1 = cv::getRotationMatrix2D(center1, angle1, 1.0);
+  // // determine bounding rectangle, center not relevant
+  // cv::Rect2f bbox1 = cv::RotatedRect(cv::Point2f(), src1.size(), angle1).boundingRect2f();
+  // // adjust transformation matrix
+  // rot1.at<double>(0,2) += bbox1.width/2.0 - src1.cols/2.0;
+  // rot1.at<double>(1,2) += bbox1.height/2.0 - src1.rows/2.0;
+
+  // cv::Mat dst1;
+  // cv::warpAffine(src1, dst1, rot1, bbox1.size()); 
 
 
-  images.push_back(dst1);
+  // images.push_back(dst1);
   cout<<"ended capture";
   imageStitcher imgStitcher(images);
   Mat stitchedImage;
@@ -361,28 +387,33 @@ int main(void)
      auto duration = duration_cast<milliseconds>(stop - start);
      cout<<"image acquisition time:"<<duration.count()<<endl;
      vector<Mat> images;
+     // images.push_back(imageTransferObj.image0);
+
+
      images.push_back(imageTransferObj.image0);
-     //images.push_back(imageTransferObj.image2);
-     //images.push_back(imageTransferObj.image1);
+     images.push_back(imageTransferObj.image1);
+     images.push_back(imageTransferObj.image2);
+     images.push_back(imageTransferObj.image3);
+
      
       // for new setup
-      double angle = 180;
+      // double angle = 180;
 
-      // get rotation matrix for rotating the image around its center in pixel coordinates
-      Mat src = imageTransferObj.image3;
-      cv::Point2f center((src.cols-1)/2.0, (src.rows-1)/2.0);
-      cv::Mat rot = cv::getRotationMatrix2D(center, angle, 1.0);
-      // determine bounding rectangle, center not relevant
-      cv::Rect2f bbox = cv::RotatedRect(cv::Point2f(), src.size(), angle).boundingRect2f();
-      // adjust transformation matrix
-      rot.at<double>(0,2) += bbox.width/2.0 - src.cols/2.0;
-      rot.at<double>(1,2) += bbox.height/2.0 - src.rows/2.0;
+      // // get rotation matrix for rotating the image around its center in pixel coordinates
+      // Mat src = imageTransferObj.image3;
+      // cv::Point2f center((src.cols-1)/2.0, (src.rows-1)/2.0);
+      // cv::Mat rot = cv::getRotationMatrix2D(center, angle, 1.0);
+      // // determine bounding rectangle, center not relevant
+      // cv::Rect2f bbox = cv::RotatedRect(cv::Point2f(), src.size(), angle).boundingRect2f();
+      // // adjust transformation matrix
+      // rot.at<double>(0,2) += bbox.width/2.0 - src.cols/2.0;
+      // rot.at<double>(1,2) += bbox.height/2.0 - src.rows/2.0;
 
-      cv::Mat dst;
-      cv::warpAffine(src, dst, rot, bbox.size()); 
-      //  
+      // cv::Mat dst;
+      // cv::warpAffine(src, dst, rot, bbox.size()); 
+      // //  
 
-      images.push_back(dst);
+      // images.push_back(dst);
 
      cout<<"\nstitching image\n";
      start = high_resolution_clock::now();

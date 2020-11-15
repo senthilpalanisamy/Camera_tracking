@@ -2,7 +2,8 @@
 #include "video_recorder.hpp"
 
 using std::to_string;
-constexpr int WAIT_TIME=100; 
+constexpr int WAIT_TIME=1; 
+using std::cout;
 
 
 videoRecorder::videoRecorder(const int writerCount, const string baseName,
@@ -28,6 +29,7 @@ void videoRecorder::writeFrames(const vector<Mat>& newFrames)
 {
   for(int i=0; i<allWriters.size(); i++)
   {
+    cout<<i<<"\t"<<newFrames[i].size().width<<"\t"<<newFrames[i].size().height<<"\t";
     allWriters[i].write(newFrames[i]);
   }
 }
@@ -46,7 +48,7 @@ videoRecorder::~videoRecorder()
 int main()
 {
 
-   frameGrabber imageTransferObj("./config/camera3.fmt");
+   frameGrabber imageTransferObj("./config/room_light.fmt");
 
    imageTransferObj.transferAllImagestoPC();
    auto image0 = imageTransferObj.image0;
