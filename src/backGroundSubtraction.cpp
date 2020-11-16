@@ -1,18 +1,15 @@
 #include <backGroundSubtraction.hpp>
+#include <video_recorder.hpp>
 #include <iostream>
 #include <string>
-
-
-
-
 
 BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
                                            bool isVisualise_)
   {
 
     GpuMat d_frame(firstImage);
-    imshow("image", firstImage);
-    waitKey(0);
+    //imshow("image", firstImage);
+    //waitKey(0);
     if(m == MOG)
     {
       mog = cuda::createBackgroundSubtractorMOG();
@@ -79,7 +76,23 @@ BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage,
   imshow("foreground image", fgimg);
   if (!bgimg.empty())
       imshow("mean background image", bgimg);
+  waitKey(30);
   }
+
+
+int getMaxAreaContourId(vector <vector<cv::Point>> contours) 
+{
+    double maxArea = 0;
+    int maxAreaContourId = -1;
+    for (int j = 0; j < contours.size(); j++) {
+        double newArea = cv::contourArea(contours.at(j));
+        if (newArea > maxArea) {
+            maxArea = newArea;
+            maxAreaContourId = j;
+        }
+    }
+    return maxAreaContourId;
+}
 
 int main()
 {
@@ -95,12 +108,34 @@ int main()
 
   cap.read(frame);
 
-  BackGroundSubtractor backgroundSubtractor(method, frame, true);
+  BackGroundSubtractor backgroundSubtractor(method, frame, false);
 
-  
+  auto recorder = videoRecorder(1, "bg_output", frame.size(), 10, true);
+
+
+  vector<vector<Point> > contours;
+  vector<Vec4i> hierarchy;
+
   while(cap.read(frame))
   {
-    backgroundSubtractor.processImage(frame);
+    auto foregroundImage = backgroundSubtractor.processImage(frame);
+    findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+    int maxContourId = getMaxAreaContourId(contours), cx, cy;
+
+    if(maxContourId >= 0)
+    {
+      auto M = moments(contours[maxContourId]);
+      cx = int(M.m10 / M.m00);
+      cy = int(M.m01 / M.m00);
+      circle(frame, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+    }
+
+
+    //imshow("image", frame);
+    //waitKey(2);
+    Mat frame2 = frame.clone();
+    recorder.writeFrames({frame});
     cout<<"here";
   }
 

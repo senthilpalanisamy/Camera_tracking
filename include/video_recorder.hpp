@@ -15,6 +15,7 @@ class videoRecorder
   public:
   videoRecorder(const int writerCount, const string baseName,
                 const Size imageSize, double fps=30.0,
+                bool isColor=false,
 		const string outputPath="./results");
   void writeFrames(const vector<Mat>& newFrames);
   ~videoRecorder();
