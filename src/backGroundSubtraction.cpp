@@ -4,6 +4,7 @@
 #include <string>
 
 using namespace std::chrono;
+using std::move;
 
 
 BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
@@ -107,41 +108,84 @@ int getMaxAreaContourId(vector <vector<cv::Point>> contours)
 
 int main()
 {
-  string input_video = "/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial0.mp4";
-  VideoCapture cap(input_video);
+  int cameraCount = 4;
+  vector<string> input_video_paths;
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial0.mp4");
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial1.mp4");
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial2.mp4");
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial3.mp4");
 
-  Mat frame;
-  Method method=MOG;
-  if(!cap.isOpened())
+  vector<VideoCapture> caps;
+  for(int i=0; i <  input_video_paths.size(); ++i)
   {
-    cout<<"video cannot be opened";
+   caps.emplace_back(input_video_paths[i]);
   }
 
-  cap.read(frame);
+  //VideoCapture cap(input_video);
 
-  BackGroundSubtractor backgroundSubtractor(method, frame, false);
+  vector<Mat> frame;
+  Method method=MOG2;
+  for(auto cap: caps)
+  {
+    if(!cap.isOpened())
+    {
+      cout<<"video cannot be opened";
+      return 0;
+    }
+  }
 
-  auto recorder = videoRecorder(1, "bg_output", frame.size(), 10, true);
+  vector<BackGroundSubtractor> bgsubs;
+  vector<Mat> frames;
+  for(int i=0; i<cameraCount; ++i)
+  {
+    Mat frame;
+    caps[i].read(frame);
+    bgsubs.emplace_back(method, frame, false);
+    frames.push_back(frame);
+  }
+
+  //BackGroundSubtractor backgroundSubtractor(method, frame, false);
+
+
+  auto recorder = videoRecorder(4, "bg_output", frames[0].size(), 10, true);
 
 
   vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
 
-  while(cap.read(frame))
+  while(true)
   {
+    vector<Mat> foregroundImages;
+    for(int i=0; i< cameraCount; ++i)
+    {
+      if(!caps[i].read(frames[i]))
+      {
+        return 0;
+      }
+    }
+
     auto start = high_resolution_clock::now();
 
-    auto foregroundImage = backgroundSubtractor.processImage(frame);
-    findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-
-    int maxContourId = getMaxAreaContourId(contours), cx, cy;
-
-    if(maxContourId >= 0)
+    for(int i=0; i < cameraCount; ++i)
     {
-      auto M = moments(contours[maxContourId]);
-      cx = int(M.m10 / M.m00);
-      cy = int(M.m01 / M.m00);
-      circle(frame, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+
+      auto foregroundImage = bgsubs[i].processImage(frames[i]);
+
+      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+      int maxContourId = getMaxAreaContourId(contours), cx, cy;
+
+      if(maxContourId >= 0)
+      {
+        auto M = moments(contours[maxContourId]);
+        cx = int(M.m10 / M.m00);
+        cy = int(M.m01 / M.m00);
+        //circle(frames[i], cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+      }
+
+      //foregroundImages.push_back(move(foregroundImage));
+
+
     }
 
     auto stop = high_resolution_clock::now();
@@ -153,7 +197,7 @@ int main()
     //imshow("image", frame);
     //waitKey(2);
     // Mat frame2 = frame.clone();
-    recorder.writeFrames({frame});
+    recorder.writeFrames(frames);
     cout<<"here";
   }
 
