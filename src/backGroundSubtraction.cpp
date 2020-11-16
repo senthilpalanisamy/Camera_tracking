@@ -3,6 +3,9 @@
 #include <iostream>
 #include <string>
 
+using namespace std::chrono;
+
+
 BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
                                            bool isVisualise_)
   {
@@ -91,7 +94,15 @@ int getMaxAreaContourId(vector <vector<cv::Point>> contours)
             maxAreaContourId = j;
         }
     }
-    return maxAreaContourId;
+
+    if(maxArea > 3200)
+    {
+      return maxAreaContourId;
+    }
+    else
+    {
+      return -1;
+    }
 }
 
 int main()
@@ -118,6 +129,8 @@ int main()
 
   while(cap.read(frame))
   {
+    auto start = high_resolution_clock::now();
+
     auto foregroundImage = backgroundSubtractor.processImage(frame);
     findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 
@@ -131,10 +144,15 @@ int main()
       circle(frame, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
     }
 
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << "\ntime: "<<duration.count() << endl;
+    cout << "\nfps: "<<1.0 / (duration.count() /1000.0 / 1000.0) << endl;
+
 
     //imshow("image", frame);
     //waitKey(2);
-    Mat frame2 = frame.clone();
+    // Mat frame2 = frame.clone();
     recorder.writeFrames({frame});
     cout<<"here";
   }
