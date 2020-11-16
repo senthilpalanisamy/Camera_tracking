@@ -3,8 +3,14 @@
 #include <iostream>
 #include <string>
 
+#include<future>
+
 using namespace std::chrono;
 using std::move;
+using std::mutex;
+using std::async;
+using std::future;
+using std::ref;
 
 
 BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
@@ -84,27 +90,195 @@ BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage,
   }
 
 
-int getMaxAreaContourId(vector <vector<cv::Point>> contours) 
-{
-    double maxArea = 0;
-    int maxAreaContourId = -1;
-    for (int j = 0; j < contours.size(); j++) {
-        double newArea = cv::contourArea(contours.at(j));
-        if (newArea > maxArea) {
-            maxArea = newArea;
-            maxAreaContourId = j;
-        }
-    }
 
-    if(maxArea > 3200)
-    {
-      return maxAreaContourId;
-    }
-    else
-    {
-      return -1;
-    }
+void parallelProcessImage1(BackGroundSubtractor& bg, Mat& image,
+                          vector<vector<int>>& coOridnates,
+                          vector<Mat>& outputImages, int i)
+{
+  //cout<<"begin";
+   //std::this_thread::sleep_for(std::chrono::seconds(3));
+
+     vector<vector<Point> > contours;
+     vector<Vec4i> hierarchy;
+
+     auto foregroundImage = bg.processImage(image);
+
+      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+      int  cx=-1, cy=-1;
+
+      double maxArea = 0;
+      int maxAreaContourId = -1;
+
+      for (int j = 0; j < contours.size(); j++) {
+          double newArea = cv::contourArea(contours.at(j));
+          if (newArea > maxArea) {
+              maxArea = newArea;
+              maxAreaContourId = j;
+          }
+      }
+
+      if(maxArea < 3200)
+      {
+        maxAreaContourId = -1;
+      }
+
+      if(maxAreaContourId >= 0)
+      {
+        auto M = moments(contours[maxAreaContourId]);
+        cx = int(M.m10 / M.m00);
+        cy = int(M.m01 / M.m00);
+        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+      }
+      //cout<<"maxArea"<<maxArea<<endl;
+      //cout<<"contourId"<<maxAreaContourId<<endl;
+
+      coOridnates[i] = {cx, cy};
+      outputImages[i] = image;
 }
+
+void parallelProcessImage2(BackGroundSubtractor& bg, Mat& image,
+                          vector<vector<int>>& coOridnates,
+                          vector<Mat>& outputImages, int i)
+{
+  //cout<<"begin";
+   //std::this_thread::sleep_for(std::chrono::seconds(3));
+
+     vector<vector<Point> > contours;
+     vector<Vec4i> hierarchy;
+
+     auto foregroundImage = bg.processImage(image);
+
+      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+      int  cx=-1, cy=-1;
+
+      double maxArea = 0;
+      int maxAreaContourId = -1;
+
+      for (int j = 0; j < contours.size(); j++) {
+          double newArea = cv::contourArea(contours.at(j));
+          if (newArea > maxArea) {
+              maxArea = newArea;
+              maxAreaContourId = j;
+          }
+      }
+
+      if(maxArea < 3200)
+      {
+        maxAreaContourId = -1;
+      }
+
+      if(maxAreaContourId >= 0)
+      {
+        auto M = moments(contours[maxAreaContourId]);
+        cx = int(M.m10 / M.m00);
+        cy = int(M.m01 / M.m00);
+        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+      }
+      //cout<<"maxArea"<<maxArea<<endl;
+      //cout<<"contourId"<<maxAreaContourId<<endl;
+
+      coOridnates[i] = {cx, cy};
+      outputImages[i] = image;
+}
+
+void parallelProcessImage3(BackGroundSubtractor& bg, Mat& image,
+                          vector<vector<int>>& coOridnates,
+                          vector<Mat>& outputImages, int i)
+{
+  //cout<<"begin";
+   //std::this_thread::sleep_for(std::chrono::seconds(3));
+
+     vector<vector<Point> > contours;
+     vector<Vec4i> hierarchy;
+
+     auto foregroundImage = bg.processImage(image);
+
+      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+      int  cx=-1, cy=-1;
+
+      double maxArea = 0;
+      int maxAreaContourId = -1;
+
+      for (int j = 0; j < contours.size(); j++) {
+          double newArea = cv::contourArea(contours.at(j));
+          if (newArea > maxArea) {
+              maxArea = newArea;
+              maxAreaContourId = j;
+          }
+      }
+
+      if(maxArea < 3200)
+      {
+        maxAreaContourId = -1;
+      }
+
+      if(maxAreaContourId >= 0)
+      {
+        auto M = moments(contours[maxAreaContourId]);
+        cx = int(M.m10 / M.m00);
+        cy = int(M.m01 / M.m00);
+        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+      }
+      //cout<<"maxArea"<<maxArea<<endl;
+      //cout<<"contourId"<<maxAreaContourId<<endl;
+
+      coOridnates[i] = {cx, cy};
+      outputImages[i] = image;
+}
+
+void parallelProcessImage4(BackGroundSubtractor& bg, Mat& image,
+                          vector<vector<int>>& coOridnates,
+                          vector<Mat>& outputImages, int i)
+{
+  //cout<<"begin";
+   //std::this_thread::sleep_for(std::chrono::seconds(3));
+
+     vector<vector<Point> > contours;
+     vector<Vec4i> hierarchy;
+
+     auto foregroundImage = bg.processImage(image);
+
+      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+      int  cx=-1, cy=-1;
+
+      double maxArea = 0;
+      int maxAreaContourId = -1;
+
+      for (int j = 0; j < contours.size(); j++) {
+          double newArea = cv::contourArea(contours.at(j));
+          if (newArea > maxArea) {
+              maxArea = newArea;
+              maxAreaContourId = j;
+          }
+      }
+
+      if(maxArea < 3200)
+      {
+        maxAreaContourId = -1;
+      }
+
+      if(maxAreaContourId >= 0)
+      {
+        auto M = moments(contours[maxAreaContourId]);
+        cx = int(M.m10 / M.m00);
+        cy = int(M.m01 / M.m00);
+        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+      }
+      //cout<<"maxArea"<<maxArea<<endl;
+      //cout<<"contourId"<<maxAreaContourId<<endl;
+
+      coOridnates[i] = {cx, cy};
+      outputImages[i] = image;
+}
+
+
+
+
+
 
 int main()
 {
@@ -150,11 +324,14 @@ int main()
   auto recorder = videoRecorder(4, "bg_output", frames[0].size(), 10, true);
 
 
-  vector<vector<Point> > contours;
-  vector<Vec4i> hierarchy;
+  vector<Mat> outputImages(4);
+  vector<vector<int>> coOridnates(4);
+  //ParallelProcess p;
 
   while(true)
   {
+
+    vector<future<void>> m_futures;
     vector<Mat> foregroundImages;
     for(int i=0; i< cameraCount; ++i)
     {
@@ -166,26 +343,32 @@ int main()
 
     auto start = high_resolution_clock::now();
 
+    //for(int i=0; i < cameraCount; ++i)
+    //{
+
+      m_futures.push_back(std::async(std::launch::async, parallelProcessImage1,
+                                ref(bgsubs[0]), ref(frames[0]), ref(coOridnates), ref(outputImages), 
+                                0));
+
+      m_futures.push_back(std::async(std::launch::async, parallelProcessImage2,
+                                ref(bgsubs[1]), ref(frames[1]), ref(coOridnates), ref(outputImages), 
+                                1));
+
+      m_futures.push_back(std::async(std::launch::async, parallelProcessImage3,
+                                ref(bgsubs[2]), ref(frames[2]), ref(coOridnates), ref(outputImages), 
+                                2));
+
+      m_futures.push_back(std::async(std::launch::async, parallelProcessImage4,
+                                ref(bgsubs[3]), ref(frames[3]), ref(coOridnates), ref(outputImages), 
+                                3));
+    //}
+
     for(int i=0; i < cameraCount; ++i)
     {
-
-      auto foregroundImage = bgsubs[i].processImage(frames[i]);
-
-      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-
-      int maxContourId = getMaxAreaContourId(contours), cx, cy;
-
-      if(maxContourId >= 0)
-      {
-        auto M = moments(contours[maxContourId]);
-        cx = int(M.m10 / M.m00);
-        cy = int(M.m01 / M.m00);
-        //circle(frames[i], cv::Point(cx , cy), 30, cv::Scalar(255), -1);
-      }
-
-      //foregroundImages.push_back(move(foregroundImage));
-
-
+      // auto status = m_futures[i].wait_for(0);
+      // cout<<"waiting";
+      while( m_futures[i].wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+      //m_futures[i].get();
     }
 
     auto stop = high_resolution_clock::now();
@@ -198,7 +381,7 @@ int main()
     //waitKey(2);
     // Mat frame2 = frame.clone();
     recorder.writeFrames(frames);
-    cout<<"here";
+    //cout<<"here";
   }
 
   return 0;

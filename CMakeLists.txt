@@ -47,7 +47,7 @@ target_include_directories(back_ground_subt PRIVATE ./include/)
 
 target_link_libraries(${CLIB_EXEC} ${OpenCV_LIBS})
 target_link_libraries(${CLIB_EXEC} /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m -pthread)
-target_link_libraries(back_ground_subt ${OpenCV_LIBS})
+target_link_libraries(back_ground_subt ${OpenCV_LIBS} -pthread)
 
 target_link_libraries(sequence_capture ${OpenCV_LIBS})
 target_link_libraries(sequence_capture /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m -pthread -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs)
