@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 
+<<<<<<< HEAD
 #include<future>
 
 using namespace std::chrono;
@@ -13,6 +14,8 @@ using std::future;
 using std::ref;
 
 
+=======
+>>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
 BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
                                            bool isVisualise_)
   {
@@ -95,6 +98,7 @@ void parallelProcessImage1(BackGroundSubtractor& bg, Mat& image,
                           vector<vector<int>>& coOridnates,
                           vector<Mat>& outputImages, int i)
 {
+<<<<<<< HEAD
   //cout<<"begin";
    //std::this_thread::sleep_for(std::chrono::seconds(3));
 
@@ -181,6 +185,18 @@ void parallelProcessImage2(BackGroundSubtractor& bg, Mat& image,
 
       coOridnates[i] = {cx, cy};
       outputImages[i] = image;
+=======
+    double maxArea = 0;
+    int maxAreaContourId = -1;
+    for (int j = 0; j < contours.size(); j++) {
+        double newArea = cv::contourArea(contours.at(j));
+        if (newArea > maxArea) {
+            maxArea = newArea;
+            maxAreaContourId = j;
+        }
+    }
+    return maxAreaContourId;
+>>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
 }
 
 void parallelProcessImage3(BackGroundSubtractor& bg, Mat& image,
@@ -330,6 +346,7 @@ int main()
 
   while(true)
   {
+<<<<<<< HEAD
 
     vector<future<void>> m_futures;
     vector<Mat> foregroundImages;
@@ -357,6 +374,10 @@ int main()
       m_futures.push_back(std::async(std::launch::async, parallelProcessImage3,
                                 ref(bgsubs[2]), ref(frames[2]), ref(coOridnates), ref(outputImages), 
                                 2));
+=======
+    auto foregroundImage = backgroundSubtractor.processImage(frame);
+    findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+>>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
 
       m_futures.push_back(std::async(std::launch::async, parallelProcessImage4,
                                 ref(bgsubs[3]), ref(frames[3]), ref(coOridnates), ref(outputImages), 
@@ -371,17 +392,18 @@ int main()
       //m_futures[i].get();
     }
 
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>(stop - start);
-    cout << "\ntime: "<<duration.count() << endl;
-    cout << "\nfps: "<<1.0 / (duration.count() /1000.0 / 1000.0) << endl;
-
 
     //imshow("image", frame);
     //waitKey(2);
+<<<<<<< HEAD
     // Mat frame2 = frame.clone();
     recorder.writeFrames(frames);
     //cout<<"here";
+=======
+    Mat frame2 = frame.clone();
+    recorder.writeFrames({frame});
+    cout<<"here";
+>>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
   }
 
   return 0;
