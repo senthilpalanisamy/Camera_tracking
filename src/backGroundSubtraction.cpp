@@ -2,20 +2,70 @@
 #include <video_recorder.hpp>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <fstream>
+#include <algorithm>
+#include <math.h>
 
-<<<<<<< HEAD
-#include<future>
+
+
 
 using namespace std::chrono;
 using std::move;
-using std::mutex;
-using std::async;
-using std::future;
-using std::ref;
+using std::vector;
+using std::ifstream;
+using std::transform;
+using std::back_inserter;
+using std::for_each;
+using std::pow;
+using std::cout;
+using std::string;
+using cv::Point;
+using cv::Scalar;
+using std::to_string;
+
+class cameraCellAssociator
+{
+
+  public:
+
+    vector<vector<int>> cell_centers;
+    vector<vector<int>> cell_index;
+
+    cameraCellAssociator(string fileName)
+    {
+
+       //ifstream myfile("./config/camera0.txt");
+       ifstream myfile(fileName);
+       int pixelx, pixely, cellx, celly;
+
+        while(myfile >> pixelx >> pixely >> cellx >> celly)
+       {
+         cell_centers.push_back({pixelx, pixely});
+         cell_index.push_back({cellx, celly});
+       }
+
+    }
 
 
-=======
->>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
+vector<int> return_closest_cell(int mice_x, int mice_y)
+  {
+    vector<double> distances(cell_centers.size());
+
+    for(int i=0; i < cell_centers.size(); ++i)
+    {
+      auto point = cell_centers[i];
+      distances[i] = pow(pow(point[0] - mice_x, 2)+
+                     pow(point[1] - mice_y, 2), 0.5);
+    }
+    int index = min_element(distances.begin(), distances.end()) - distances.begin();
+    auto cell = cell_index[index];
+    return cell;
+  }
+
+};
+
+
 BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
                                            bool isVisualise_)
   {
@@ -93,99 +143,8 @@ BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage,
   }
 
 
-
-void parallelProcessImage1(BackGroundSubtractor& bg, Mat& image,
-                          vector<vector<int>>& coOridnates,
-                          vector<Mat>& outputImages, int i)
+int getMaxAreaContourId(vector <vector<cv::Point>> contours) 
 {
-<<<<<<< HEAD
-  //cout<<"begin";
-   //std::this_thread::sleep_for(std::chrono::seconds(3));
-
-     vector<vector<Point> > contours;
-     vector<Vec4i> hierarchy;
-
-     auto foregroundImage = bg.processImage(image);
-
-      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-
-      int  cx=-1, cy=-1;
-
-      double maxArea = 0;
-      int maxAreaContourId = -1;
-
-      for (int j = 0; j < contours.size(); j++) {
-          double newArea = cv::contourArea(contours.at(j));
-          if (newArea > maxArea) {
-              maxArea = newArea;
-              maxAreaContourId = j;
-          }
-      }
-
-      if(maxArea < 3200)
-      {
-        maxAreaContourId = -1;
-      }
-
-      if(maxAreaContourId >= 0)
-      {
-        auto M = moments(contours[maxAreaContourId]);
-        cx = int(M.m10 / M.m00);
-        cy = int(M.m01 / M.m00);
-        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
-      }
-      //cout<<"maxArea"<<maxArea<<endl;
-      //cout<<"contourId"<<maxAreaContourId<<endl;
-
-      coOridnates[i] = {cx, cy};
-      outputImages[i] = image;
-}
-
-void parallelProcessImage2(BackGroundSubtractor& bg, Mat& image,
-                          vector<vector<int>>& coOridnates,
-                          vector<Mat>& outputImages, int i)
-{
-  //cout<<"begin";
-   //std::this_thread::sleep_for(std::chrono::seconds(3));
-
-     vector<vector<Point> > contours;
-     vector<Vec4i> hierarchy;
-
-     auto foregroundImage = bg.processImage(image);
-
-      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-
-      int  cx=-1, cy=-1;
-
-      double maxArea = 0;
-      int maxAreaContourId = -1;
-
-      for (int j = 0; j < contours.size(); j++) {
-          double newArea = cv::contourArea(contours.at(j));
-          if (newArea > maxArea) {
-              maxArea = newArea;
-              maxAreaContourId = j;
-          }
-      }
-
-      if(maxArea < 3200)
-      {
-        maxAreaContourId = -1;
-      }
-
-      if(maxAreaContourId >= 0)
-      {
-        auto M = moments(contours[maxAreaContourId]);
-        cx = int(M.m10 / M.m00);
-        cy = int(M.m01 / M.m00);
-        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
-      }
-      //cout<<"maxArea"<<maxArea<<endl;
-      //cout<<"contourId"<<maxAreaContourId<<endl;
-
-      coOridnates[i] = {cx, cy};
-      outputImages[i] = image;
-=======
     double maxArea = 0;
     int maxAreaContourId = -1;
     for (int j = 0; j < contours.size(); j++) {
@@ -195,115 +154,32 @@ void parallelProcessImage2(BackGroundSubtractor& bg, Mat& image,
             maxAreaContourId = j;
         }
     }
-    return maxAreaContourId;
->>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
+
+    if(maxArea > 600)
+    {
+      return maxAreaContourId;
+    }
+    else
+    {
+      return -1;
+    }
 }
-
-void parallelProcessImage3(BackGroundSubtractor& bg, Mat& image,
-                          vector<vector<int>>& coOridnates,
-                          vector<Mat>& outputImages, int i)
-{
-  //cout<<"begin";
-   //std::this_thread::sleep_for(std::chrono::seconds(3));
-
-     vector<vector<Point> > contours;
-     vector<Vec4i> hierarchy;
-
-     auto foregroundImage = bg.processImage(image);
-
-      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-
-      int  cx=-1, cy=-1;
-
-      double maxArea = 0;
-      int maxAreaContourId = -1;
-
-      for (int j = 0; j < contours.size(); j++) {
-          double newArea = cv::contourArea(contours.at(j));
-          if (newArea > maxArea) {
-              maxArea = newArea;
-              maxAreaContourId = j;
-          }
-      }
-
-      if(maxArea < 3200)
-      {
-        maxAreaContourId = -1;
-      }
-
-      if(maxAreaContourId >= 0)
-      {
-        auto M = moments(contours[maxAreaContourId]);
-        cx = int(M.m10 / M.m00);
-        cy = int(M.m01 / M.m00);
-        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
-      }
-      //cout<<"maxArea"<<maxArea<<endl;
-      //cout<<"contourId"<<maxAreaContourId<<endl;
-
-      coOridnates[i] = {cx, cy};
-      outputImages[i] = image;
-}
-
-void parallelProcessImage4(BackGroundSubtractor& bg, Mat& image,
-                          vector<vector<int>>& coOridnates,
-                          vector<Mat>& outputImages, int i)
-{
-  //cout<<"begin";
-   //std::this_thread::sleep_for(std::chrono::seconds(3));
-
-     vector<vector<Point> > contours;
-     vector<Vec4i> hierarchy;
-
-     auto foregroundImage = bg.processImage(image);
-
-      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-
-      int  cx=-1, cy=-1;
-
-      double maxArea = 0;
-      int maxAreaContourId = -1;
-
-      for (int j = 0; j < contours.size(); j++) {
-          double newArea = cv::contourArea(contours.at(j));
-          if (newArea > maxArea) {
-              maxArea = newArea;
-              maxAreaContourId = j;
-          }
-      }
-
-      if(maxArea < 3200)
-      {
-        maxAreaContourId = -1;
-      }
-
-      if(maxAreaContourId >= 0)
-      {
-        auto M = moments(contours[maxAreaContourId]);
-        cx = int(M.m10 / M.m00);
-        cy = int(M.m01 / M.m00);
-        circle(image, cv::Point(cx , cy), 30, cv::Scalar(255), -1);
-      }
-      //cout<<"maxArea"<<maxArea<<endl;
-      //cout<<"contourId"<<maxAreaContourId<<endl;
-
-      coOridnates[i] = {cx, cy};
-      outputImages[i] = image;
-}
-
-
-
-
-
 
 int main()
 {
   int cameraCount = 4;
   vector<string> input_video_paths;
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial0.mp4");
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial1.mp4");
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial2.mp4");
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/all_results/results_10/resultssample_trial3.mp4");
+                              
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial0.mp4");
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial1.mp4");
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial0.mp4");
+  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial0.mp4");
+
+  vector<cameraCellAssociator> cellAssociation;
+  cellAssociation.emplace_back("./config/camera0.txt");
+  cellAssociation.emplace_back("./config/camera1.txt");
+  cellAssociation.emplace_back("./config/camera2.txt");
+  cellAssociation.emplace_back("./config/camera3.txt");
 
   vector<VideoCapture> caps;
   for(int i=0; i <  input_video_paths.size(); ++i)
@@ -340,15 +216,11 @@ int main()
   auto recorder = videoRecorder(4, "bg_output", frames[0].size(), 10, true);
 
 
-  vector<Mat> outputImages(4);
-  vector<vector<int>> coOridnates(4);
-  //ParallelProcess p;
+  vector<vector<Point> > contours;
+  vector<Vec4i> hierarchy;
 
   while(true)
   {
-<<<<<<< HEAD
-
-    vector<future<void>> m_futures;
     vector<Mat> foregroundImages;
     for(int i=0; i< cameraCount; ++i)
     {
@@ -360,50 +232,42 @@ int main()
 
     auto start = high_resolution_clock::now();
 
-    //for(int i=0; i < cameraCount; ++i)
-    //{
-
-      m_futures.push_back(std::async(std::launch::async, parallelProcessImage1,
-                                ref(bgsubs[0]), ref(frames[0]), ref(coOridnates), ref(outputImages), 
-                                0));
-
-      m_futures.push_back(std::async(std::launch::async, parallelProcessImage2,
-                                ref(bgsubs[1]), ref(frames[1]), ref(coOridnates), ref(outputImages), 
-                                1));
-
-      m_futures.push_back(std::async(std::launch::async, parallelProcessImage3,
-                                ref(bgsubs[2]), ref(frames[2]), ref(coOridnates), ref(outputImages), 
-                                2));
-=======
-    auto foregroundImage = backgroundSubtractor.processImage(frame);
-    findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
->>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
-
-      m_futures.push_back(std::async(std::launch::async, parallelProcessImage4,
-                                ref(bgsubs[3]), ref(frames[3]), ref(coOridnates), ref(outputImages), 
-                                3));
-    //}
-
     for(int i=0; i < cameraCount; ++i)
     {
-      // auto status = m_futures[i].wait_for(0);
-      // cout<<"waiting";
-      while( m_futures[i].wait_for(std::chrono::seconds(0)) != std::future_status::ready);
-      //m_futures[i].get();
+
+      auto foregroundImage = bgsubs[i].processImage(frames[i]);
+
+      findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+      int maxContourId = getMaxAreaContourId(contours), cx, cy;
+
+      if(maxContourId >= 0)
+      {
+        auto M = moments(contours[maxContourId]);
+        cx = int(M.m10 / M.m00);
+        cy = int(M.m01 / M.m00);
+        circle(frames[i], cv::Point(cx , cy), 30, cv::Scalar(255), -1);
+	auto associatedCell  = cellAssociation[i].return_closest_cell(cx, cy);
+	putText(frames[i], to_string(associatedCell[0]) + ","+ to_string(associatedCell[1]),
+		Point(cx, cy-10), FONT_HERSHEY_COMPLEX_SMALL, 3, Scalar(0, 255, 0), 2);
+      }
+
+      //foregroundImages.push_back(move(foregroundImage));
+
+
     }
 
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << "\ntime: "<<duration.count() << endl;
+    cout << "\nfps: "<<1.0 / (duration.count() /1000.0 / 1000.0) << endl;
 
-    //imshow("image", frame);
-    //waitKey(2);
-<<<<<<< HEAD
+
+    imshow("image", frames[0]);
+    waitKey(2);
     // Mat frame2 = frame.clone();
     recorder.writeFrames(frames);
-    //cout<<"here";
-=======
-    Mat frame2 = frame.clone();
-    recorder.writeFrames({frame});
     cout<<"here";
->>>>>>> f0e1bfe52ea20126da881ad86a41e3218ae6b519
   }
 
   return 0;
