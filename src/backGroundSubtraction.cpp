@@ -196,6 +196,8 @@ int main()
 
   for(int i=0; i<cameraCount; ++i)
   {
+
+
     //Mat frame;
     //caps[i].read(frame);
     bgsubs.emplace_back(method, frames[i], false);
@@ -205,7 +207,7 @@ int main()
   //BackGroundSubtractor backgroundSubtractor(method, frame, false);
 
 
-  auto recorder = videoRecorder(4, "bg_output", frames[0].size(), 10, true);
+  auto recorder = videoRecorder(4, "bg_output", frames[0].size(), 10, false);
 
 
   vector<vector<Point> > contours;
@@ -258,7 +260,10 @@ int main()
 
 
     imshow("image", frames[0]);
-    waitKey(2);
+    char c = waitKey(2);
+
+    if(c == 27 || c == 10)
+	break;
     // Mat frame2 = frame.clone();
     recorder.writeFrames(frames);
     cout<<"here";
