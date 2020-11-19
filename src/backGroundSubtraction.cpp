@@ -1,4 +1,5 @@
 #include <backGroundSubtraction.hpp>
+#include "simple_capture.hpp"
 #include <video_recorder.hpp>
 #include <iostream>
 #include <string>
@@ -168,12 +169,6 @@ int getMaxAreaContourId(vector <vector<cv::Point>> contours)
 int main()
 {
   int cameraCount = 4;
-  vector<string> input_video_paths;
-                              
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial0.mp4");
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial1.mp4");
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial0.mp4");
-  input_video_paths.push_back("/home/senthil/work/Camera_tracking/results_3/resultssample_trial0.mp4");
 
   vector<cameraCellAssociator> cellAssociation;
   cellAssociation.emplace_back("./config/camera0.txt");
@@ -181,33 +176,30 @@ int main()
   cellAssociation.emplace_back("./config/camera2.txt");
   cellAssociation.emplace_back("./config/camera3.txt");
 
-  vector<VideoCapture> caps;
-  for(int i=0; i <  input_video_paths.size(); ++i)
-  {
-   caps.emplace_back(input_video_paths[i]);
-  }
+  frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
+
 
   //VideoCapture cap(input_video);
 
   vector<Mat> frame;
   Method method=MOG2;
-  for(auto cap: caps)
-  {
-    if(!cap.isOpened())
-    {
-      cout<<"video cannot be opened";
-      return 0;
-    }
-  }
 
   vector<BackGroundSubtractor> bgsubs;
   vector<Mat> frames;
+
+  imageTransferObj.transferAllImagestoPC();
+
+  frames.push_back(imageTransferObj.image0);
+  frames.push_back(imageTransferObj.image1);
+  frames.push_back(imageTransferObj.image2);
+  frames.push_back(imageTransferObj.image3);
+
   for(int i=0; i<cameraCount; ++i)
   {
-    Mat frame;
-    caps[i].read(frame);
-    bgsubs.emplace_back(method, frame, false);
-    frames.push_back(frame);
+    //Mat frame;
+    //caps[i].read(frame);
+    bgsubs.emplace_back(method, frames[i], false);
+    //frames.push_back(frame);
   }
 
   //BackGroundSubtractor backgroundSubtractor(method, frame, false);
@@ -221,16 +213,18 @@ int main()
 
   while(true)
   {
-    vector<Mat> foregroundImages;
-    for(int i=0; i< cameraCount; ++i)
-    {
-      if(!caps[i].read(frames[i]))
-      {
-        return 0;
-      }
-    }
 
     auto start = high_resolution_clock::now();
+    vector<Mat> foregroundImages;
+
+    imageTransferObj.transferAllImagestoPC();
+
+    frames[0] = imageTransferObj.image0;
+    frames[1] = imageTransferObj.image1;
+    frames[2] = imageTransferObj.image2;
+    frames[3] = imageTransferObj.image3;
+
+
 
     for(int i=0; i < cameraCount; ++i)
     {
