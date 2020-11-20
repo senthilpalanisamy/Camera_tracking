@@ -13,6 +13,7 @@ class videoRecorder
 
   vector<VideoWriter> allWriters;
   public:
+  string baseName, fileFormat, outputPath;
   videoRecorder(const int writerCount, const string baseName,
                 const Size imageSize, double fps=30.0,
                 bool isColor=false,
