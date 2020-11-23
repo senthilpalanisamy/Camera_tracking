@@ -3,7 +3,10 @@
 #include "xcliball.h"
 #include <iostream>
 #include "simple_capture.hpp"
-//#include <cstdlib>
+#include "opencv2/calib3d/calib3d.hpp"
+
+#include <jsoncpp/json/json.h>
+#include <fstream>
 
 
 
@@ -14,20 +17,24 @@ constexpr int HORIZONTAL_RES=2048;
 constexpr int VERTICAL_RES=2048;
 using cv::imshow;
 using cv::waitKey;
+using cv::Mat;
+using std::to_string;
+using std::vector;
 
 
-frameGrabber::frameGrabber(const char* configPath)
+frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
+                           string lensCorrectionFolderPath_)
   {
    pxd_PIXCIopen("", "", configPath);
 
    buf = (unsigned char*) malloc(  pxd_imageXdim()    // horizontal resolution
                        * pxd_imageYdim()    // vertical resolution
                        * sizeof(unsigned char));
-  
+
    buf0 = (unsigned char*) malloc(  pxd_imageXdim()    // horizontal resolution
                        * pxd_imageYdim()    // vertical resolution
                        * sizeof(unsigned char));
-   
+
    buf1 = (unsigned char*) malloc(  pxd_imageXdim()    // horizontal resolution
                        * pxd_imageYdim()    // vertical resolution
                        * sizeof(unsigned char));
@@ -37,15 +44,48 @@ frameGrabber::frameGrabber(const char* configPath)
    buf3 = (unsigned char*) malloc(  pxd_imageXdim()    // horizontal resolution
                        * pxd_imageYdim()    // vertical resolution
                        * sizeof(unsigned char));
-   // for(int i=0; i < 4; i++)
-   // {
-
-   //   size_t cameraNo = 1 << i;
-   //   //pxd_goLivePair(cameraNo, 0, 1);
-   //   pxd_goLive(cameraNo, i+1);  
-   // }
+   doLensCorrection = doLensCorrection_;
+   lensCorrectionFolderPath = lensCorrectionFolderPath_;
    cout<<"start error status:";
    cout<<pxd_goLive(15, 1);
+  }
+
+ void frameGrabber::performLensCorrection(Mat& image, int imageNo)
+  {
+
+  cv::Size imageSize(cv::Size(image.cols,image.rows));
+  vector<double> distCoeffs(5);
+  cv::Mat cameraMatrix(3, 3, CV_64F);
+
+  string json_file_path = lensCorrectionFolderPath + "/" +"camera_"+ to_string(imageNo)+".json";
+  std::ifstream cameraParametersFile(json_file_path, std::ifstream::binary);
+  Json::Value cameraParameters;
+
+
+  cameraParametersFile >> cameraParameters;
+  auto intrinsic = cameraParameters["intrinsic"];
+
+  for(int i=0; i < 3; ++i)
+   {
+     for(int j=0; j < 3; ++j )
+     {
+       cameraMatrix.at<double>(i, j)= cameraParameters["intrinsic"][i][j].asDouble();
+     }
+   }
+  for(int i=0; i < distCoeffs.size(); ++i)
+  {
+    distCoeffs[i] = cameraParameters["dist"][0][i].asDouble();
+
+
+  }
+
+  // Refining the camera matrix using parameters obtained by calibration
+  auto new_camera_matrix = cv::getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0);
+
+  // Method 1 to undistort the image
+  cv::Mat dst;
+  cv::undistort( image, dst, new_camera_matrix, distCoeffs, new_camera_matrix );
+  image = dst;
   }
 
   void frameGrabber::transferImagetoPC(size_t frameGrabberNo)
@@ -99,6 +139,15 @@ frameGrabber::frameGrabber(const char* configPath)
       transferImagetoPC(i);
     }
 
+    if(doLensCorrection)
+    {
+      performLensCorrection(image0, 0);
+      performLensCorrection(image1, 1);
+      performLensCorrection(image2, 2);
+      performLensCorrection(image3, 3);
+    }
+
+
   }
 
   void frameGrabber::displayAllImages()
@@ -123,10 +172,3 @@ frameGrabber::frameGrabber(const char* configPath)
    free(buf);
   }
 
-// int main(void)
-// {
-//   frameGrabber imageTransferObj("../data/camera2.fmt");
-//   imageTransferObj.transferAllImagestoPC();
-//   imageTransferObj.displayAllImages();
-// 
-// }
