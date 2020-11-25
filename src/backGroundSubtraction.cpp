@@ -289,9 +289,9 @@ int main()
 
     }
 
+    recorder.writeFrames(frames);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
-    recorder.writeFrames(frames);
     cout << "\ntime: "<<duration.count() << endl;
     cout << "\nfps: "<<1.0 / (duration.count() /1000.0 / 1000.0) << endl;
 
