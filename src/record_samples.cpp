@@ -12,22 +12,28 @@ videoRecorder::videoRecorder(const int writerCount, const string baseName_,
                 const Size imageSize, double fps, bool isColor,
                 const string outputPath_,  bool isMultiProcess_)
 {
-  string fileFormat=".mp4";
+  fileFormat=".mp4";
   int fourcc = VideoWriter::fourcc('M', 'P', '4', 'V');       
   isMultiProcess = isMultiProcess_;
+  baseName = baseName_;
+  outputPath = outputPath_;
+  //int check = mkdir(outputPath.c_str(), 0777);
+  string command = "mkdir -p "+ outputPath;
+  system(command.c_str());
 
 
 
   for(int i=0; i < writerCount; ++i)
   {
-    string filePath = outputPath + baseName + to_string(i) + fileFormat;
+    string filePath = baseName + to_string(i) + fileFormat;
     allWriters.emplace_back(filePath, fourcc, fps, imageSize, isColor);
   }
 
   if(isMultiProcess)
   {
-    m_futures.reserve(writerCount);
-    images.reserve(writerCount);
+    m_futures.resize(writerCount);
+    images.resize(writerCount);
+    isFirst = true;
   }
 
 }

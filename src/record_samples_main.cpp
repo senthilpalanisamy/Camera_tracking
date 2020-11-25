@@ -51,6 +51,8 @@ int main()
    cout<<outputPath;
 
 
+   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt", true,
+   //		                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
    frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
    imageTransferObj.transferAllImagestoPC();
 

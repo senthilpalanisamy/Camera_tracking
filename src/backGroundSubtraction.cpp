@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <math.h>
 
+#include <ctime>
+#include <sys/stat.h>
+
 
 
 
@@ -166,9 +169,40 @@ int getMaxAreaContourId(vector <vector<cv::Point>> contours)
     }
 }
 
+string return_date_header()
+{
+
+   time_t now = time(0);
+   tm *ltm = localtime(&now);
+   string date_header = to_string(1 + ltm->tm_mon) + "_" + to_string(ltm->tm_mday); 
+   return date_header;
+		             
+}
+
+string getFolderPath()
+{
+
+   string folder_name, outputPath;
+   bool isFolderPathUnique = true;
+
+   while(isFolderPathUnique)
+   {
+
+   cout<<"Please enter a unique folder name for saving results\n";
+   cin>>folder_name;
+   outputPath = "./samples/" + return_date_header() + "/" + folder_name;
+   struct stat buffer;
+   isFolderPathUnique = !stat (outputPath.c_str(), &buffer); 
+   }
+   return outputPath;
+}
+
+
+
 int main()
 {
   int cameraCount = 4;
+  string experimentPath = getFolderPath();
 
   vector<cameraCellAssociator> cellAssociation;
   cellAssociation.emplace_back("./config/camera0.txt");
@@ -205,9 +239,11 @@ int main()
   }
 
   //BackGroundSubtractor backgroundSubtractor(method, frame, false);
+  string rawVideoPath = experimentPath + "/" + "unprocessed"; 
 
 
-  auto recorder = videoRecorder(4, "bg_output", frames[0].size(), 10, false);
+  auto recorder = videoRecorder(4, "bg_output", frames[0].size(), 10, false,
+		                rawVideoPath, true);
 
 
   vector<vector<Point> > contours;
@@ -255,6 +291,7 @@ int main()
 
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
+    recorder.writeFrames(frames);
     cout << "\ntime: "<<duration.count() << endl;
     cout << "\nfps: "<<1.0 / (duration.count() /1000.0 / 1000.0) << endl;
 
@@ -265,7 +302,6 @@ int main()
     if(c == 27 || c == 10)
 	break;
     // Mat frame2 = frame.clone();
-    recorder.writeFrames(frames);
     cout<<"here";
   }
 

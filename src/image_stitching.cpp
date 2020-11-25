@@ -342,7 +342,10 @@ class imageStitcher
 int main(void)
 {
   cout<<"started capture";
-  frameGrabber imageTransferObj("./config/camera3.fmt");
+  // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
+
+  frameGrabber imageTransferObj("./config/red_light_with_binning.fmt", true,
+  	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;
   images.push_back(imageTransferObj.image0);
