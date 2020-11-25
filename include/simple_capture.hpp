@@ -6,6 +6,8 @@
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
 
+using std::string;
+
 class frameGrabber
 {
 
@@ -21,6 +23,9 @@ class frameGrabber
   void transferAllImagestoPC();
   void displayAllImages();
   ~frameGrabber();
+
+  private:
+  void performLensCorrection(cv::Mat& image, int cameraNo);
 };
 #endif
 

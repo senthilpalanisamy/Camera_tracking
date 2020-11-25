@@ -1,13 +1,16 @@
 #include "video_recorder.hpp"
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <unistd.h> 
+#include<stdlib.h>
 
 using std::to_string;
 using std::cout;
-using std::async;
 
 
-videoRecorder::videoRecorder(const int writerCount, const string baseName,
+videoRecorder::videoRecorder(const int writerCount, const string baseName_,
                 const Size imageSize, double fps, bool isColor,
-                const string outputPath, bool isMultiProcess_)
+                const string outputPath_,  bool isMultiProcess_)
 {
   string fileFormat=".mp4";
   int fourcc = VideoWriter::fourcc('M', 'P', '4', 'V');       
@@ -90,6 +93,14 @@ videoRecorder::~videoRecorder()
  for(auto writer: allWriters)
  {
 	 writer.release();
+ }
+
+ for(int i=0; i < allWriters.size(); ++i)
+ {
+	 string command = "mv " + baseName + to_string(i) + fileFormat +" " 
+		          + outputPath + "/" + baseName + 
+			  to_string(i) + fileFormat;
+	 system(command.c_str());
  }
 
 }

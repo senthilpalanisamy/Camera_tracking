@@ -18,8 +18,8 @@ class videoRecorder
 
   vector<VideoWriter> allWriters;
   public:
-
-  vector<future<void>> m_futures;
+  string baseName, fileFormat, outputPath;
+ vector<future<void>> m_futures;
   vector<Mat> images;
   bool isMultiProcess, isFirst, isFinished;
   videoRecorder(const int writerCount, const string baseName,

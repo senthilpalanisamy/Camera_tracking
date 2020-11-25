@@ -3,7 +3,10 @@
 #include "xcliball.h"
 #include <iostream>
 #include "simple_capture.hpp"
-//#include <cstdlib>
+#include "opencv2/calib3d/calib3d.hpp"
+
+#include <jsoncpp/json/json.h>
+#include <fstream>
 
 
 
@@ -14,10 +17,13 @@ constexpr int HORIZONTAL_RES=2048;
 constexpr int VERTICAL_RES=2048;
 using cv::imshow;
 using cv::waitKey;
+using cv::Mat;
+using std::to_string;
+using std::vector;
 
 
 frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
-                           string lensCorrectionFilePath_)
+                           string lensCorrectionFolderPath_)
   {
    pxd_PIXCIopen("", "", configPath);
 
@@ -51,7 +57,7 @@ frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
   vector<double> distCoeffs(5);
   cv::Mat cameraMatrix(3, 3, CV_64F);
 
-  string json_file_path = lensCorrectionFolderPath + "/" +"camera"+ to_string(imageNo)+".json";
+  string json_file_path = lensCorrectionFolderPath + "/" +"camera_"+ to_string(imageNo)+".json";
   std::ifstream cameraParametersFile(json_file_path, std::ifstream::binary);
   Json::Value cameraParameters;
 
