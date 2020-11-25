@@ -205,12 +205,12 @@ int main()
   string experimentPath = getFolderPath();
 
   vector<cameraCellAssociator> cellAssociation;
-  cellAssociation.emplace_back("./config/camera0.txt");
-  cellAssociation.emplace_back("./config/camera1.txt");
-  cellAssociation.emplace_back("./config/camera2.txt");
-  cellAssociation.emplace_back("./config/camera3.txt");
+  cellAssociation.emplace_back("./config/cell_association/camera0.txt");
+  cellAssociation.emplace_back("./config/cell_association/camera1.txt");
+  cellAssociation.emplace_back("./config/cell_association/camera2.txt");
+  cellAssociation.emplace_back("./config/cell_association/camera3.txt");
 
-  frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
+  frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt");
 
 
   //VideoCapture cap(input_video);

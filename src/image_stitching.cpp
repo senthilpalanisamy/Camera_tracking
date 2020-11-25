@@ -344,7 +344,7 @@ int main(void)
   cout<<"started capture";
   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
 
-  frameGrabber imageTransferObj("./config/red_light_with_binning.fmt", true,
+  frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt", true,
   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;

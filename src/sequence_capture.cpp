@@ -126,6 +126,6 @@ class frameGrabber
 
  int main(void)
  {
-   frameGrabber imageTransferObj("./config/trigger3.fmt");
+   frameGrabber imageTransferObj("./config/video_config/trigger3.fmt");
    imageTransferObj.writeImagestoPC();
  }
