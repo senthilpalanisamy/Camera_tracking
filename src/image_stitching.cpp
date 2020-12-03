@@ -103,28 +103,29 @@ class imageStitcher
    }
 
 
-   //getbiggestBoundingboxImage(stitchedImage);
-   finalSize = opSize;
+   getbiggestBoundingboxImage(stitchedImage);
+   //finalSize = opSize;
+   //
+   double data[9] = {1, 0, -(double) min_x, 0, 1, -(double) min_y, 0, 0, 1};
+   Mat trans = Mat(3, 3, CV_64F, data); 
 
 
 
 
-   // for(auto& h:allHomographies)
-   // {
+   for(auto& h:allHomographies)
+   {
 
-   // // h = h.inv();
-   // double data[9] = {1, 0, -(double) min_x, 0, 1, -(double) min_y, 0, 0, 1};
-   // Mat trans = Mat(3, 3, CV_64F, data); 
-   // //double scale  = h.at<double>(2,2) - h.at<double>(2,0);
-   // //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
-   // //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
-   // h = trans * h;
+   // h = h.inv();
+   //double scale  = h.at<double>(2,2) - h.at<double>(2,0);
+   //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
+   //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
+   h = trans * h;
 
-   // //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
-   // //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
-   // // h = h.inv();
+   //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
+   //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
+   // h = h.inv();
 
-   // }
+   }
   }
 
 
@@ -216,7 +217,7 @@ class imageStitcher
 
        //H = findHomography( pointsMapping, detectedPoints, RANSAC);
        // H = findHomography( detectedPoints, pointsMapping, RANSAC, 1);
-       H = findHomography( detectedPoints, pointsMapping, LMEDS);
+       H = findHomography( detectedPoints, pointsMapping, 0);
 
        #ifdef DEBUG
        namedWindow("image",WINDOW_NORMAL);
@@ -282,24 +283,6 @@ int main(void)
      images.push_back(imageTransferObj.image3);
 
      
-      // for new setup
-      // double angle = 180;
-
-      // // get rotation matrix for rotating the image around its center in pixel coordinates
-      // Mat src = imageTransferObj.image3;
-      // cv::Point2f center((src.cols-1)/2.0, (src.rows-1)/2.0);
-      // cv::Mat rot = cv::getRotationMatrix2D(center, angle, 1.0);
-      // // determine bounding rectangle, center not relevant
-      // cv::Rect2f bbox = cv::RotatedRect(cv::Point2f(), src.size(), angle).boundingRect2f();
-      // // adjust transformation matrix
-      // rot.at<double>(0,2) += bbox.width/2.0 - src.cols/2.0;
-      // rot.at<double>(1,2) += bbox.height/2.0 - src.rows/2.0;
-
-      // cv::Mat dst;
-      // cv::warpAffine(src, dst, rot, bbox.size()); 
-      // //  
-
-      // images.push_back(dst);
 
      cout<<"\nstitching image\n";
      start = high_resolution_clock::now();

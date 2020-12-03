@@ -110,7 +110,7 @@ class imageStitcher
    Mat ipImage = images[i];
    Mat homography = computeHomographyChessBoard(ipImage);
    allHomographies.push_back(homography);
-   //stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
+   stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
    }
 
 
@@ -153,7 +153,7 @@ class imageStitcher
 
    string inputFilePath = opPath + "/" + "image_size.txt";
    auto inFile = openFile(inputFilePath);
-   inFile<<finalSize.width;
+   inFile<<finalSize.width<<endl;
    inFile<<finalSize.height;
 
   }
