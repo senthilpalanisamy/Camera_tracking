@@ -1,14 +1,15 @@
+#include <iostream>
+#include <fstream>
+#include <limits>
+
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
-
 #include "opencv2/stitching/detail/matchers.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
-#include <limits>
 
 #include "simple_capture.hpp"
-#include <iostream>
-#include <fstream>
+#include "utility_functions.hpp"
 
 
 
