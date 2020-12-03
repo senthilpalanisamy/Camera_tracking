@@ -115,9 +115,10 @@ class imageStitcher
   Size finalSize;
   vector<Mat> allHomographies;
   int min_x, max_x, min_y, max_y;
+  Size chessboardDims;
 
   vector<Point2f> initialiseChessBoardPoints(Size opSize, int boardWidth=9, 
-                                             int boardHeight=6)
+                                             int boardHeight=7)
   {
 
      float squareSize = 30;
@@ -145,9 +146,12 @@ class imageStitcher
   imageStitcher(vector<Mat> images)
   {
    size_t i, j;
-   size_t opimgWidth = images[0].cols * 2, opimgheight = images[0].rows * 2;
+   size_t opimgWidth = images[0].cols * 3, opimgheight = images[0].rows * 3;
    opSize = Size(opimgWidth, opimgheight);
-   pointsMapping = initialiseChessBoardPoints(opSize);
+   chessboardDims.width = 9;
+   chessboardDims.height = 6;
+   pointsMapping = initialiseChessBoardPoints(opSize, chessboardDims.width, 
+		                             chessboardDims.height);
 
 
    min_x = std::numeric_limits<int>::max();
@@ -162,39 +166,38 @@ class imageStitcher
    for(i=0; i < images.size(); i++)
    {
 
+   imshow("image", images[i]);
+   waitKey(0);
+
    Mat ipImage = images[i];
    Mat homography = computeHomographyChessBoard(ipImage);
    allHomographies.push_back(homography);
    stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
    }
 
-   imwrite("stich_calibrate.png", stitchedImage);
 
-   getbiggestBoundingboxImage(stitchedImage);
-
-
-   // Debugging
-   min_x = 0;
-   min_y = 0;
-   max_x = stitchedImage.cols;
-   max_y = stitchedImage.rows;
-
-  finalSize.width = max_x;
-  finalSize.height = max_y;
-
-  // Debugging
+   //getbiggestBoundingboxImage(stitchedImage);
+   finalSize = opSize;
 
 
-   for(auto& h:allHomographies)
-   {
 
-   // h = h.inv();
-   double scale  = h.at<double>(2,2);
-   h.at<double>(0,2) = h.at<double>(0,2) - scale * min_x;
-   h.at<double>(1,2) = h.at<double>(1,2) - scale * min_y;
-   // h = h.inv();
 
-   }
+   // for(auto& h:allHomographies)
+   // {
+
+   // // h = h.inv();
+   // double data[9] = {1, 0, -(double) min_x, 0, 1, -(double) min_y, 0, 0, 1};
+   // Mat trans = Mat(3, 3, CV_64F, data); 
+   // //double scale  = h.at<double>(2,2) - h.at<double>(2,0);
+   // //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
+   // //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
+   // h = trans * h;
+
+   // //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
+   // //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
+   // // h = h.inv();
+
+   // }
   }
 
 
@@ -277,15 +280,16 @@ class imageStitcher
     int winSize = 11;
     Mat H;
     int chessBoardFlags = CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE;
-    found = findChessboardCorners( image, Size(9,6), detectedPoints, chessBoardFlags);
+    found = findChessboardCorners( image, chessboardDims, detectedPoints, chessBoardFlags);
     if ( found )                // If done with success,
     {
        cornerSubPix( image, detectedPoints, Size(winSize,winSize),
                                    Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 30, 0.0001  ));
-       drawChessboardCorners( image, Size(9,6), Mat(detectedPoints), found);
+       drawChessboardCorners( image, chessboardDims, Mat(detectedPoints), found);
 
        //H = findHomography( pointsMapping, detectedPoints, RANSAC);
-       H = findHomography( detectedPoints, pointsMapping, RANSAC, 1);
+       // H = findHomography( detectedPoints, pointsMapping, RANSAC, 1);
+       H = findHomography( detectedPoints, pointsMapping, LMEDS);
 
        #ifdef DEBUG
        namedWindow("image",WINDOW_NORMAL);
@@ -344,7 +348,7 @@ int main(void)
   cout<<"started capture";
   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
 
-  frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt", true,
+  frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;
@@ -353,21 +357,6 @@ int main(void)
   images.push_back(imageTransferObj.image2);
   images.push_back(imageTransferObj.image3);
 
-     imshow("image0", images[0]);
-     waitKey(0);
-
-  // Mat src1 = imageTransferObj.image3;
-  // double angle1 = 180;
-  // cv::Point2f center1((src1.cols-1)/2.0, (src1.rows-1)/2.0);
-  // cv::Mat rot1 = cv::getRotationMatrix2D(center1, angle1, 1.0);
-  // // determine bounding rectangle, center not relevant
-  // cv::Rect2f bbox1 = cv::RotatedRect(cv::Point2f(), src1.size(), angle1).boundingRect2f();
-  // // adjust transformation matrix
-  // rot1.at<double>(0,2) += bbox1.width/2.0 - src1.cols/2.0;
-  // rot1.at<double>(1,2) += bbox1.height/2.0 - src1.rows/2.0;
-
-  // cv::Mat dst1;
-  // cv::warpAffine(src1, dst1, rot1, bbox1.size()); 
 
 
   // images.push_back(dst1);
