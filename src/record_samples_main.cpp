@@ -1,8 +1,11 @@
-#include <video_recorder.hpp>
-#include "simple_capture.hpp"
 #include <iostream>
 #include <ctime>
 #include <sys/stat.h>
+
+#include <video_recorder.hpp>
+
+#include "simple_capture.hpp"
+#include "utility_functions.hpp"
 
 
 
@@ -14,25 +17,6 @@ using std::endl;
 
 constexpr int WAIT_TIME=1; 
 
-string return_date_time_header()
-{
-
-   time_t now = time(0);
-   tm *ltm = localtime(&now);
-   string date_time_header = to_string(1 + ltm->tm_mon) + "_" + to_string(ltm->tm_mday) 
-	                     + "_" + to_string(5+ltm->tm_hour) + ":" + to_string(30+ltm->tm_min) + ":" +
-		             to_string(ltm->tm_sec);
-}
-
-string return_date_header()
-{
-
-   time_t now = time(0);
-   tm *ltm = localtime(&now);
-   string date_header = to_string(1 + ltm->tm_mon) + "_" + to_string(ltm->tm_mday); 
-   return date_header;
-		             
-}
 
 int main()
 {

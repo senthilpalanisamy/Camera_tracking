@@ -1,15 +1,57 @@
 #include <pthread.h>
 #include <fstream>
+#include <iostream>
+
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <unistd.h> 
+#include<stdlib.h>
 
 #include "opencv2/calib3d/calib3d.hpp"
 #include <jsoncpp/json/json.h>
 
 #include "utility_functions.hpp"
+
 using std::to_string;
-
-
-
+using std::pow;
+using std::ifstream;
+using std::cin;
 pthread_mutex_t lock;
+
+
+cameraCellAssociator::cameraCellAssociator(string fileName)
+{
+
+   //ifstream myfile("./config/camera0.txt");
+   ifstream myfile(fileName);
+   int pixelx, pixely, cellx, celly;
+
+    while(myfile >> pixelx >> pixely >> cellx >> celly)
+   {
+     cell_centers.push_back({pixelx, pixely});
+     cell_index.push_back({cellx, celly});
+   }
+
+}
+
+
+vector<int> cameraCellAssociator::return_closest_cell(int mice_x, int mice_y)
+  {
+    vector<double> distances(cell_centers.size());
+
+    for(int i=0; i < cell_centers.size(); ++i)
+    {
+      auto point = cell_centers[i];
+      distances[i] = pow(pow(point[0] - mice_x, 2)+
+                     pow(point[1] - mice_y, 2), 0.5);
+    }
+    int index = min_element(distances.begin(), distances.end()) - distances.begin();
+    auto cell = cell_index[index];
+    return cell;
+  }
+
+
+
 
 class ParallelPixelTransfer: public ParallelLoopBody
 {
@@ -138,6 +180,68 @@ class ParallelPixelTransfer: public ParallelLoopBody
   cv::undistort( image, dst, new_camera_matrix, distCoeffs, new_camera_matrix );
   image = dst;
   }
+
+int getMaxAreaContourId(vector <vector<cv::Point>> contours) 
+{
+    double maxArea = 0;
+    int maxAreaContourId = -1;
+    for (int j = 0; j < contours.size(); j++) {
+        double newArea = cv::contourArea(contours.at(j));
+        if (newArea > maxArea) {
+            maxArea = newArea;
+            maxAreaContourId = j;
+        }
+    }
+
+    if(maxArea > 600)
+    {
+      return maxAreaContourId;
+    }
+    else
+    {
+      return -1;
+    }
+}
+
+string return_date_header()
+{
+
+   time_t now = time(0);
+   tm *ltm = localtime(&now);
+   string date_header = to_string(1 + ltm->tm_mon) + "_" + to_string(ltm->tm_mday); 
+   return date_header;
+		             
+}
+
+string getFolderPath()
+{
+
+   string folder_name, outputPath;
+   bool isFolderPathUnique = true;
+
+   while(isFolderPathUnique)
+   {
+
+   cout<<"Please enter a unique folder name for saving results\n";
+   cin>>folder_name;
+   outputPath = "./samples/" + return_date_header() + "/" + folder_name;
+   struct stat buffer;
+   isFolderPathUnique = !stat (outputPath.c_str(), &buffer); 
+   }
+   return outputPath;
+}
+
+string return_date_time_header()
+{
+
+   time_t now = time(0);
+   tm *ltm = localtime(&now);
+   string date_time_header = to_string(1 + ltm->tm_mon) + "_" + to_string(ltm->tm_mday) 
+	                     + "_" + to_string(5+ltm->tm_hour) + ":" + to_string(30+ltm->tm_min) + ":" +
+		             to_string(ltm->tm_sec);
+}
+
+
 
 
 

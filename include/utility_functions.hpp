@@ -24,9 +24,27 @@ struct ImageStitchData
   Mat homography;
 };
 
+
+class cameraCellAssociator
+{
+
+  public:
+
+    vector<vector<int>> cell_centers;
+    vector<vector<int>> cell_index;
+
+    cameraCellAssociator(string fileName);
+    vector<int> return_closest_cell(int mice_x, int mice_y);
+};
+
 Mat stitchImageschessBoard(Mat stitchedImage, Mat ipImage, Mat Homography);
 void* WarpandStitchImages(void *arguments);
+
 void performLensCorrection(Mat& image, int imageNo, string lensCorrectionFolderPath);
+int getMaxAreaContourId(vector <vector<cv::Point>> contours);
+string return_date_header();
+string getFolderPath();
+string return_date_time_header();
 
 #endif
 

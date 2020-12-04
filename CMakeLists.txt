@@ -19,7 +19,7 @@ SET(IMG_STITCH_SRC src/image_stitching.cpp)
 
 add_subdirectory(third_party/pybind11)
 
-SET(SOURCE_FILES ./src/deeplabFrameInference.cpp ./src/main.cpp)
+SET(SOURCE_FILES ./src/deeplabFrameInference.cpp ./src/deeplabcut_sample_usuage.cpp)
 
 add_executable(main ${SOURCE_FILES})
 target_include_directories(main PRIVATE ./include ${OpenCV_INCLUDE_DIRS})
@@ -37,7 +37,7 @@ add_executable(sample_capture ./src/record_samples.cpp ./src/record_samples_main
 add_executable(calibrate_homography ./src/calibrate_camera_homographies.cpp ./src/utility_functions.cpp)
 add_executable(sequence_capture ./src/sequence_capture )
 add_executable(back_ground_subt ./src/backGroundSubtraction.cpp ./src/record_samples.cpp ./src/simple_capture.cpp
-	       ./src/utility_functions.cpp)
+	       ./src/utility_functions.cpp ./src/main.cpp)
 
 target_include_directories(${IMAGE_STITCH_EXEC} PRIVATE ./include/)
 target_include_directories(${CLIB_EXEC} PRIVATE ./include/)
