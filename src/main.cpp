@@ -78,6 +78,7 @@ int main()
 
 
 
+
   vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
 
@@ -122,6 +123,7 @@ int main()
     }
 
     rawVideoRecorder.writeFrames(frames);
+    stitchedVideorecorder .writeFrames(frames);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << "\ntime: "<<duration.count() << endl;

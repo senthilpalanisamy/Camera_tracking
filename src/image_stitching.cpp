@@ -20,6 +20,39 @@ using std::endl;
 
 Mat outputImage;
 
+class ParallelPixelTransfer: public ParallelLoopBody
+{
+  mutable Mat unwarpedImage;
+  mutable Mat stitchedImage;
+  public:
+    ParallelPixelTransfer(Mat& srcPtr, Mat& dstPtr)
+    {
+      unwarpedImage = srcPtr;
+      stitchedImage = dstPtr;
+    }
+
+    virtual void operator() (const Range& range) const CV_OVERRIDE
+    {
+      int r=0;
+      for(r = range.start; r < range.end; r++)
+      {
+        int i = r / unwarpedImage.cols;
+        int j = r % unwarpedImage.cols;
+
+          if(stitchedImage.ptr<uchar>(i)[j] == 0)
+          {
+            stitchedImage.ptr<uchar>(i)[j] = unwarpedImage.ptr<uchar>(i)[j];
+          }
+          }
+     }
+
+    ParallelPixelTransfer& operator=(const ParallelPixelTransfer&)
+    {
+      return *this;
+    }
+
+};
+
 imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
 		string lensCorrectionFolderPath_)
   {
@@ -62,12 +95,9 @@ imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
   {
 
    Mat dstImage(finalSize, CV_8U, Scalar(0));
-   outputImage = dstImage;
-
+   //outputImage = dstImage;
    size_t i;
 
-   pthread_t tid[images.size()];
-   ImageStitchData imagedataVector[4];
    if(doLensCorrection)
    {
 	   
@@ -81,23 +111,14 @@ imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
 
    for(i=0; i < images.size(); i++)
    {
-   struct ImageStitchData imageStitchData;
-   imageStitchData.dstImage = outputImage;
-   imageStitchData.homography = allHomographies[i];
-   imageStitchData.inputImage = images[i];
-   imagedataVector[i] = imageStitchData;
-   int error = pthread_create(&(tid[i]), NULL, WarpandStitchImages, (void *) &imagedataVector[i]);
-   if(error != 0)
-   {
-      throw "thread not created";
-   }
 
-  }
-   for(i=0; i < images.size(); i++)
-    {
-     pthread_join(tid[i], NULL);
+    Mat imageUnwarped;
+
+    warpPerspective (images[i], imageUnwarped, allHomographies[i], finalSize, INTER_LINEAR);
+    ParallelPixelTransfer parellelPixelTransfer(imageUnwarped, dstImage);
+    parallel_for_(Range(0, imageUnwarped.rows * imageUnwarped.cols), parellelPixelTransfer);
    }
-    return outputImage;
+    return dstImage;
    }
 
 
