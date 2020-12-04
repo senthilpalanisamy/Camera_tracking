@@ -113,3 +113,28 @@ videoRecorder::~videoRecorder()
 }
 
 
+stitchedVideoRecorder:stitchedVideoRecorder(const int writerCount, const string baseName,
+                                            const Size imageSize, double fps,
+                                            bool isColor,const string outputPath, bool isMultiProcess,
+			                    string homographyConfigPath, string lensCorrectionFolderPath):
+	                                    VideoRecorder
+			                    (
+			                     const int writerCount, const string baseName,
+                                             const Size imageSize, double fps,
+                                             bool isColor,const string outputPath, bool isMultiProcess
+			                    )
+  {
+  imgStitcher = imgStitcher(homographyConfigPath, true, lenCorrectionFolderPath);
+  }
+
+void stichedVideoRecorder:writeFrames(const vector<Mat>& newFrames)
+{
+
+
+}
+
+
+
+
+
+

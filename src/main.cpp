@@ -61,8 +61,6 @@ int main()
 
 
 
-  // imageStitcher imgStitcher(homographyConfig, true,
-  //		           "./config/camera_intrinsics_1024x1024");
 
   for(int i=0; i<cameraCount; ++i)
   {
