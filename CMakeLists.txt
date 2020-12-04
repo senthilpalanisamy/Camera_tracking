@@ -33,10 +33,11 @@ include_directories(/usr/local/xclib/inc/ /snap/gnome-3-34-1804/27/usr/include)
 add_library(${CLIB_EXEC} ${CLIB_SOURCES})
 
 add_executable(${IMAGE_STITCH_EXEC} ${IMG_STITCH_SRC} ./src/utility_functions.cpp)
-add_executable(sample_capture ./src/record_samples.cpp ./src/record_samples_main.cpp)
+add_executable(sample_capture ./src/record_samples.cpp ./src/record_samples_main.cpp ./src/utility_functions.cpp)
 add_executable(calibrate_homography ./src/calibrate_camera_homographies.cpp ./src/utility_functions.cpp)
 add_executable(sequence_capture ./src/sequence_capture )
-add_executable(back_ground_subt ./src/backGroundSubtraction.cpp ./src/record_samples.cpp ./src/simple_capture.cpp)
+add_executable(back_ground_subt ./src/backGroundSubtraction.cpp ./src/record_samples.cpp ./src/simple_capture.cpp
+	       ./src/utility_functions.cpp)
 
 target_include_directories(${IMAGE_STITCH_EXEC} PRIVATE ./include/)
 target_include_directories(${CLIB_EXEC} PRIVATE ./include/)
