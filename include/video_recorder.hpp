@@ -14,14 +14,15 @@ using std::vector;
 using cv::VideoWriter;
 using std::async;
 using std::future;
+using std::queue;
 using std::ref;
 
 
 class videoRecorder
 {
 
-  vector<VideoWriter> allWriters;
   public:
+  vector<VideoWriter> allWriters;
   string baseName, fileFormat, outputPath;
   vector<future<void>> m_futures;
   vector<Mat> images;
@@ -35,11 +36,13 @@ class videoRecorder
 };
 
 
-class stitchedVideoRecorder : public VideoRecorder 
-
+class stitchedVideoRecorder : public videoRecorder 
 {   
   public:
   imageStitcher imgStitcher;
+  future<Mat> stitchStatus;
+  future<void> writingStatus;
+  queue<Mat> stitchedImages;
 
   stitchedVideoRecorder(const int writerCount, const string baseName,
                         const Size imageSize, double fps=30.0,
@@ -47,8 +50,7 @@ class stitchedVideoRecorder : public VideoRecorder
 		        const string outputPath="./results", bool isMultiProcess=false,
 			string homographyConfigPath_="./config/camera_homographies/",
 			string lensCorrectionFolderPath_="./config/camera_intrinsics_1024x1024");
-
   void writeFrames(const vector<Mat>& newFrames);
-}
+};
 
 #endif

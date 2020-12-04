@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(example)
 set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "")
-# set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 17)
 find_package( OpenCV 4.0.1 REQUIRED ) 
 
@@ -33,7 +33,8 @@ include_directories(/usr/local/xclib/inc/ /snap/gnome-3-34-1804/27/usr/include)
 add_library(${CLIB_EXEC} ${CLIB_SOURCES})
 
 add_executable(${IMAGE_STITCH_EXEC} src/image_stitching.cpp ./src/utility_functions.cpp ./src/image_stitching_main.cpp)
-add_executable(sample_capture ./src/record_samples.cpp ./src/record_samples_main.cpp ./src/utility_functions.cpp)
+add_executable(sample_capture ./src/record_samples.cpp ./src/record_samples_main.cpp ./src/utility_functions.cpp 
+	      ./src/image_stitching.cpp)
 add_executable(calibrate_homography ./src/calibrate_camera_homographies.cpp ./src/utility_functions.cpp)
 add_executable(sequence_capture ./src/sequence_capture )
 add_executable(back_ground_subt ./src/backGroundSubtraction.cpp ./src/record_samples.cpp ./src/simple_capture.cpp

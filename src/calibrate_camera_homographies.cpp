@@ -98,7 +98,7 @@ class imageStitcher
    Mat stitchedImage(opSize, CV_8UC1, Scalar(0));
 
    string command = "mkdir -p "+ opPath;
-   system(command.c_str());
+   auto _ = system(command.c_str());
 
 
    for(i=0; i < images.size(); i++)
