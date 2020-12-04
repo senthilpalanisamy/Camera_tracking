@@ -11,6 +11,7 @@ using namespace cv;
 using std::vector;
 //using cv::detail::MatchesInfo;
 using std::cout;
+using std::string;
 
 extern Mat outputImage;
 
@@ -25,6 +26,7 @@ struct ImageStitchData
 
 Mat stitchImageschessBoard(Mat stitchedImage, Mat ipImage, Mat Homography);
 void* WarpandStitchImages(void *arguments);
+void performLensCorrection(Mat& image, int imageNo, string lensCorrectionFolderPath);
 
 #endif
 

@@ -1,6 +1,12 @@
 #include <pthread.h>
+#include <fstream>
+
+#include "opencv2/calib3d/calib3d.hpp"
+#include <jsoncpp/json/json.h>
 
 #include "utility_functions.hpp"
+using std::to_string;
+
 
 
 pthread_mutex_t lock;
@@ -94,6 +100,43 @@ class ParallelPixelTransfer: public ParallelLoopBody
 
     return stitchedImage;
 
+  }
+
+ void performLensCorrection(Mat& image, int imageNo, string lensCorrectionFolderPath)
+  {
+
+  cv::Size imageSize(cv::Size(image.cols,image.rows));
+  vector<double> distCoeffs(5);
+  cv::Mat cameraMatrix(3, 3, CV_64F);
+
+  string json_file_path = lensCorrectionFolderPath + "/" +"camera_"+ to_string(imageNo)+".json";
+  std::ifstream cameraParametersFile(json_file_path, std::ifstream::binary);
+  Json::Value cameraParameters;
+
+
+  cameraParametersFile >> cameraParameters;
+  auto intrinsic = cameraParameters["intrinsic"];
+
+  for(int i=0; i < 3; ++i)
+   {
+     for(int j=0; j < 3; ++j )
+     {
+       cameraMatrix.at<double>(i, j)= cameraParameters["intrinsic"][i][j].asDouble();
+     }
+   }
+  for(int i=0; i < distCoeffs.size(); ++i)
+  {
+    distCoeffs[i] = cameraParameters["dist"][0][i].asDouble();
+
+  }
+
+  // Refining the camera matrix using parameters obtained by calibration
+  auto new_camera_matrix = cv::getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 0, imageSize, 0);
+
+  // Method 1 to undistort the image
+  cv::Mat dst;
+  cv::undistort( image, dst, new_camera_matrix, distCoeffs, new_camera_matrix );
+  image = dst;
   }
 
 
