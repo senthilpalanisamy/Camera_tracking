@@ -135,8 +135,9 @@ class imageStitcher
     }
    vector<string> fileNames = {"camera1_to_ground_plane.txt", "camera2_to_ground_plane.txt", 
 	                       "camera3_to_ground_plane.txt", "camera4_to_ground_plane.txt"};
-   for(auto fileName:fileNames)
+   for(int h_index=0; h_index < 4; ++h_index)
    {
+     string fileName = fileNames[h_index];
      string inputFilePath = opPath + "/" + fileName;
      auto inFile = openFile(inputFilePath);
 
@@ -144,7 +145,7 @@ class imageStitcher
       {
 	 for(int j=0; j < 3; ++j)
 	 {
-           inFile<<allHomographies[i].at<double>(i, j)<<endl;
+           inFile<<allHomographies[h_index].at<double>(i, j)<<endl;
 	 }
       }
       inFile.close();
@@ -237,6 +238,9 @@ int main(void)
 {
   cout<<"started capture";
   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
+
+  // frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
+  //	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
 
   frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");

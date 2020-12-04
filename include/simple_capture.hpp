@@ -25,7 +25,7 @@ class frameGrabber
   ~frameGrabber();
 
   private:
-  void performLensCorrection(cv::Mat& image, int cameraNo);
+  //void performLensCorrection(cv::Mat& image, int cameraNo);
 };
 #endif
 
