@@ -2,15 +2,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/stitching/detail/matchers.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
 
-
-#include "simple_capture.hpp"
 #include "utility_functions.hpp"
+#include "image_stitching.hpp"
 
 
 
@@ -20,36 +14,14 @@ using std::to_string;
 
 
 
-using namespace cv;
-using std::vector;
 //using cv::detail::MatchesInfo;
 using std::cout;
-using namespace std::chrono;
 using std::endl;
 
 Mat outputImage;
 
-
-
-
-
-
-class imageStitcher
-{
-  public:
-
-  vector<Point2f> pointsMapping;
-  Size opSize;
-  Size finalSize;
-  vector<Mat> allHomographies;
-  int min_x, max_x, min_y, max_y;
-  Size chessboardDims;
-  bool doLensCorrection;
-  string lensCorrectionFolderPath;
-
-
-  imageStitcher(string configPath="./config/camera_homographies/", bool doLensCorrection_=true,
-		string lensCorrectionFolderPath_="./config/camera_intrinsics_1024x1024")
+imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
+		string lensCorrectionFolderPath_)
   {
 
    vector<string> fileNames = {"camera1_to_ground_plane.txt", "camera2_to_ground_plane.txt", 
@@ -83,13 +55,10 @@ class imageStitcher
      std::ifstream infile(imageSizePath);
      infile >> finalSize.width;
      infile >> finalSize.height;
-
-
-
   }
 
 
-  Mat stitchImagesOnline(vector<Mat> images)
+  Mat imageStitcher::stitchImagesOnline(vector<Mat> images)
   {
 
    Mat dstImage(finalSize, CV_8U, Scalar(0));
@@ -133,66 +102,4 @@ class imageStitcher
 
 
 
-};
 
-int main(void)
-{
-  cout<<"started capture";
-  // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
-
-  //   frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt", true,
-  //   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
-  // 
-  //  frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
-  //  	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
-
-  frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", false);
-  imageTransferObj.transferAllImagestoPC();
-  vector<Mat> images;
-  images.push_back(imageTransferObj.image0);
-  images.push_back(imageTransferObj.image1);
-  images.push_back(imageTransferObj.image2);
-  images.push_back(imageTransferObj.image3);
-
-
-
-  // images.push_back(dst1);
-  cout<<"ended capture";
-  imageStitcher imgStitcher;
-  Mat stitchedImage;
-
-
-   while(true)
-   {
-     auto start = high_resolution_clock::now();
-     imageTransferObj.transferAllImagestoPC();
-     auto stop = high_resolution_clock::now();
-     auto duration = duration_cast<milliseconds>(stop - start);
-     cout<<"image acquisition time:"<<duration.count()<<endl;
-     vector<Mat> images;
-     // images.push_back(imageTransferObj.image0);
-
-
-     images.push_back(imageTransferObj.image0);
-     images.push_back(imageTransferObj.image1);
-     images.push_back(imageTransferObj.image2);
-     images.push_back(imageTransferObj.image3);
-
-     
-
-     cout<<"\nstitching image\n";
-     start = high_resolution_clock::now();
-     stitchedImage = imgStitcher.stitchImagesOnline(images);
-     stop = high_resolution_clock::now();
-     duration = duration_cast<milliseconds>(stop - start);
-     cout<<"Image stitching time:"<<duration.count()<<endl;
-     imshow("stitchedImageop", stitchedImage);
-     if(waitKey(1) >= 0)
-       break;
-     //imageTransferObj.displayAllImages();
-
-     imwrite("outputimage.png", stitchedImage);
-
- } 
-
-}

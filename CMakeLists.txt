@@ -14,7 +14,7 @@ SET(CMAKE_CXX_FLAGS  "${DRIVER_FLAGS}")
 
 # puts all .cpp files inside src to the SOURCES variable
 SET(CLIB_SOURCES src/simple_capture.cpp)
-SET(IMG_STITCH_SRC src/image_stitching.cpp)
+# SET(IMG_STITCH_SRC src/image_stitching.cpp)
 
 
 add_subdirectory(third_party/pybind11)
@@ -32,7 +32,7 @@ include_directories(/usr/local/xclib/inc/ /snap/gnome-3-34-1804/27/usr/include)
 # compiles the files defined by SOURCES to generante the executable defined by EXEC
 add_library(${CLIB_EXEC} ${CLIB_SOURCES})
 
-add_executable(${IMAGE_STITCH_EXEC} ${IMG_STITCH_SRC} ./src/utility_functions.cpp)
+add_executable(${IMAGE_STITCH_EXEC} src/image_stitching.cpp ./src/utility_functions.cpp ./src/image_stitching_main.cpp)
 add_executable(sample_capture ./src/record_samples.cpp ./src/record_samples_main.cpp ./src/utility_functions.cpp)
 add_executable(calibrate_homography ./src/calibrate_camera_homographies.cpp ./src/utility_functions.cpp)
 add_executable(sequence_capture ./src/sequence_capture )
