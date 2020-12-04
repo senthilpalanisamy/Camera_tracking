@@ -133,7 +133,6 @@ class imageStitcher
     // h = h.inv();
 
     }
-   finalSize = opSize;
    vector<string> fileNames = {"camera1_to_ground_plane.txt", "camera2_to_ground_plane.txt", 
 	                       "camera3_to_ground_plane.txt", "camera4_to_ground_plane.txt"};
    for(auto fileName:fileNames)

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(example)
-# set(PYBIND11_PYTHON_VERSION 3.6)
 set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "")
 # set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_BUILD_TYPE Debug)
@@ -12,7 +11,6 @@ set(CLIB_EXEC output)
 set(IMAGE_STITCH_EXEC image_output2)
 SET(DRIVER_FLAGS "-DC_GNU64=400 -DOS_LINUX -no-pie")
 SET(CMAKE_CXX_FLAGS  "${DRIVER_FLAGS}")
-# set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
 # puts all .cpp files inside src to the SOURCES variable
 SET(CLIB_SOURCES src/simple_capture.cpp)
@@ -21,9 +19,6 @@ SET(IMG_STITCH_SRC src/image_stitching.cpp)
 
 add_subdirectory(third_party/pybind11)
 
-# file(GLOB SOURCE_FILES
-#       "./src/*.cpp"
-#      )
 SET(SOURCE_FILES ./src/deeplabFrameInference.cpp ./src/main.cpp)
 
 add_executable(main ${SOURCE_FILES})

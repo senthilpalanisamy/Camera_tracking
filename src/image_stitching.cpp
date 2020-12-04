@@ -1,5 +1,6 @@
 #include <limits>
 #include <iostream>
+#include <fstream>
 
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
@@ -70,62 +71,40 @@ class imageStitcher
   return sourcePoints;
   }
 
-  imageStitcher(vector<Mat> images)
+  imageStitcher(string configPath="./config/camera_homographies/")
   {
-   size_t i, j;
-   size_t opimgWidth = images[0].cols * 3, opimgheight = images[0].rows * 3;
-   opSize = Size(opimgWidth, opimgheight);
-   chessboardDims.width = 9;
-   chessboardDims.height = 6;
-   pointsMapping = initialiseChessBoardPoints(opSize, chessboardDims.width, 
-		                             chessboardDims.height);
 
+   vector<string> fileNames = {"camera1_to_ground_plane.txt", "camera2_to_ground_plane.txt", 
+	                       "camera3_to_ground_plane.txt", "camera4_to_ground_plane.txt"};
+   double number;
+   for(int h_index=0; h_index < fileNames.size(); ++h_index)
+   { 
+     string fileName = fileNames[h_index];
+     std::ifstream infile(configPath+fileName);
+     //allHomographies[h_index].create(3, 3, CV_64F, Scalar(0));
+     Mat homography = Mat(3, 3, CV_64F, Scalar(0));
+     //double homography[9];
+     for(int i=0; i<3; ++i)
+     {
+       for(int j=0; j<3; ++j)
+       {
+	 infile >> number;
+	 //homography[3*i+j] = number;
+	 homography.at<double>(i, j) = number;
+       }
 
-   min_x = std::numeric_limits<int>::max();
-   max_x = std::numeric_limits<int>::min();
-   min_y = std::numeric_limits<int>::max();
-   max_y = std::numeric_limits<int>::min();
+     }
+     allHomographies.push_back(homography);
 
+    }
 
-   Mat stitchedImage(opSize, CV_8UC1, Scalar(0));
-
-
-   for(i=0; i < images.size(); i++)
-   {
-
-   imshow("image", images[i]);
-   waitKey(0);
-
-   Mat ipImage = images[i];
-   Mat homography = computeHomographyChessBoard(ipImage);
-   allHomographies.push_back(homography);
-   stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
-   }
-
-
-   getbiggestBoundingboxImage(stitchedImage);
-   //finalSize = opSize;
-   //
-   double data[9] = {1, 0, -(double) min_x, 0, 1, -(double) min_y, 0, 0, 1};
-   Mat trans = Mat(3, 3, CV_64F, data); 
+     string imageSizePath = configPath + "image_size.txt";
+     std::ifstream infile(imageSizePath);
+     infile >> finalSize.width;
+     infile >> finalSize.height;
 
 
 
-
-   for(auto& h:allHomographies)
-   {
-
-   // h = h.inv();
-   //double scale  = h.at<double>(2,2) - h.at<double>(2,0);
-   //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
-   //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
-   h = trans * h;
-
-   //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
-   //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
-   // h = h.inv();
-
-   }
   }
 
 
@@ -243,7 +222,10 @@ int main(void)
   cout<<"started capture";
   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
 
-  frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt", true,
+//   frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt", true,
+//   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
+// 
+  frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;
@@ -256,7 +238,7 @@ int main(void)
 
   // images.push_back(dst1);
   cout<<"ended capture";
-  imageStitcher imgStitcher(images);
+  imageStitcher imgStitcher;
   Mat stitchedImage;
 
   //namedWindow("stitchedImageop",WINDOW_NORMAL);
