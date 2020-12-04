@@ -45,8 +45,19 @@ int main()
    imageTransferObj.transferAllImagestoPC();
 
    auto image0 = imageTransferObj.image0;
-   auto recorder = videoRecorder(4, "sample_trial", image0.size(),
+
+   string homographyConfigPath = "./config/camera_homographies/";
+   Size stitchedImageSize;
+
+   string imageSizePath = homographyConfigPath + "image_size.txt";
+   std::ifstream infile(imageSizePath);
+   infile >> stitchedImageSize.width;
+   infile >> stitchedImageSize.height;
+
+   auto recorder = videoRecorder(4, "raw_video", image0.size(),
 		                 30, false, outputPath);
+   auto stitchedRecorder = stitchedVideoRecorder(1, "stitchedVideo", stitchedImageSize,
+		                                30, false, outputPath); 
 
    while(true) 
    {
@@ -66,6 +77,7 @@ int main()
     }
 	 
     recorder.writeFrames(images);
+    stitchedRecorder.writeFrames(images);
     // if(cv::waitKey(33) == 
     if ( (char)27 == (char) cv::waitKey(WAIT_TIME) ) 
        break;

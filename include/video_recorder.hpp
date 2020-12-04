@@ -30,7 +30,7 @@ class videoRecorder
   videoRecorder(const int writerCount, const string baseName,
                 const Size imageSize, double fps=30.0,
                 bool isColor=false,
-		const string outputPath="./results", bool isMultiProcess=false);
+		const string outputPath="./results", bool isMultiProcess=true);
   void writeFrames(const vector<Mat>& newFrames);
   ~videoRecorder();
 };
@@ -47,7 +47,7 @@ class stitchedVideoRecorder : public videoRecorder
   stitchedVideoRecorder(const int writerCount, const string baseName,
                         const Size imageSize, double fps=30.0,
                         bool isColor=false,
-		        const string outputPath="./results", bool isMultiProcess=false,
+		        const string outputPath="./results", bool isMultiProcess=true,
 			string homographyConfigPath_="./config/camera_homographies/",
 			string lensCorrectionFolderPath_="./config/camera_intrinsics_1024x1024");
   void writeFrames(const vector<Mat>& newFrames);
