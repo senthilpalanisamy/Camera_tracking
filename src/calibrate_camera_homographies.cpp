@@ -105,7 +105,12 @@ class imageStitcher
    pointsMapping = initialiseChessBoardPoints(opSize, chessboardDims.width, 
 		                             chessboardDims.height);
    // charuco board
-   computeHomographyCharucoBoard(images[0], 0);
+   for(int i=0; i < 4; ++i)
+   {
+
+   computeHomographyCharucoBoard(images[i], i);
+
+   }
 
 
    min_x = std::numeric_limits<int>::max();
@@ -314,7 +319,7 @@ class imageStitcher
           cv::aruco::drawDetectedCornersCharuco(imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
      }
         cv::imshow("out", imageCopy);
-        cv::waitKey(30);
+        cv::waitKey(0);
   }
 
 };
@@ -324,7 +329,7 @@ int main(void)
   cout<<"started capture";
   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
 
-  frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
+  frameGrabber imageTransferObj("./config/video_config/room_light_charuco2.fmt", true,
   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
 
   // frameGrabber imageTransferObj("./config/video_config/room_light_charuco.fmt", false);
