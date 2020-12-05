@@ -73,8 +73,8 @@ int main()
   auto rawVideoRecorder = videoRecorder(4, "bg_output", frames[0].size(), 10, false,
 		                rawVideoPath, true);
 
-  auto stitchedVideorecorder = videoRecorder(1, "stitched_output", stitchedImageSize, 10, false,
-		                rawVideoPath, true);
+  auto stitchedVideorecorder = stitchedVideoRecorder(1, "stitched_output", stitchedImageSize, 10, false,
+		                                     rawVideoPath, true);
 
 
 
