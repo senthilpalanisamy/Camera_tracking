@@ -12,6 +12,7 @@ using std::vector;
 //using cv::detail::MatchesInfo;
 using std::cout;
 using std::string;
+using std::tuple;
 
 extern Mat outputImage;
 
@@ -45,6 +46,7 @@ int getMaxAreaContourId(vector <vector<cv::Point>> contours);
 string return_date_header();
 string getFolderPath();
 string return_date_time_header();
+tuple<vector<double>, Mat> readCameraParameters(string jsonFilePath);
 
 
 #endif

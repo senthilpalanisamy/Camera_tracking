@@ -16,6 +16,7 @@ using std::to_string;
 using std::pow;
 using std::ifstream;
 using std::cin;
+using std::make_tuple;
 pthread_mutex_t lock;
 
 
@@ -144,15 +145,13 @@ class ParallelPixelTransfer: public ParallelLoopBody
 
   }
 
- void performLensCorrection(Mat& image, int imageNo, string lensCorrectionFolderPath)
-  {
+ tuple<vector<double>, Mat> readCameraParameters(string jsonFilePath)
+ {
 
-  cv::Size imageSize(cv::Size(image.cols,image.rows));
   vector<double> distCoeffs(5);
   cv::Mat cameraMatrix(3, 3, CV_64F);
 
-  string json_file_path = lensCorrectionFolderPath + "/" +"camera_"+ to_string(imageNo)+".json";
-  std::ifstream cameraParametersFile(json_file_path, std::ifstream::binary);
+  std::ifstream cameraParametersFile(jsonFilePath, std::ifstream::binary);
   Json::Value cameraParameters;
 
 
@@ -171,6 +170,19 @@ class ParallelPixelTransfer: public ParallelLoopBody
     distCoeffs[i] = cameraParameters["dist"][0][i].asDouble();
 
   }
+
+  return make_tuple(distCoeffs, cameraMatrix);
+ }
+
+ void performLensCorrection(Mat& image, int imageNo, string lensCorrectionFolderPath)
+  {
+
+  cv::Size imageSize(cv::Size(image.cols,image.rows));
+
+  string json_file_path = lensCorrectionFolderPath + "/" +"camera_"+ to_string(imageNo)+".json";
+  auto cameraParameters = readCameraParameters(json_file_path);
+  auto cameraMatrix = std::get<1>(cameraParameters);
+  auto distCoeffs = std::get<0>(cameraParameters);
 
   // Refining the camera matrix using parameters obtained by calibration
   auto new_camera_matrix = cv::getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 0, imageSize, 0);

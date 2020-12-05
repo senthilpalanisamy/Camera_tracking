@@ -5,11 +5,14 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
+#include <opencv2/aruco/charuco.hpp>
 #include "opencv2/stitching/detail/matchers.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 
 #include "simple_capture.hpp"
 #include "utility_functions.hpp"
+
+
 
 
 
@@ -20,6 +23,7 @@ using std::vector;
 using cv::detail::MatchesInfo;
 using std::cout;
 using std::endl;
+using std::to_string;
 
 
 
@@ -51,6 +55,8 @@ class imageStitcher
   vector<Mat> allHomographies;
   int min_x, max_x, min_y, max_y;
   Size chessboardDims;
+  vector<Mat> cameraMatrixList;
+  vector<vector<double>> distCoeffsList;
 
   vector<Point2f> initialiseChessBoardPoints(Size opSize, int boardWidth=9, 
                                              int boardHeight=7)
@@ -78,8 +84,19 @@ class imageStitcher
   return sourcePoints;
   }
 
-  imageStitcher(vector<Mat> images, string opPath="./config/camera_homographies")
+  imageStitcher(vector<Mat> images, string opPath="./config/camera_homographies",
+		string cameraParametersPath="./config/camera_intrinsics_1024x1024")
   {
+
+   for(int i=0; i < 4; ++i)
+   {
+
+     string json_file_path = cameraParametersPath + "/" +"camera_"+ to_string(i)+".json";
+     auto cameraParameters = readCameraParameters(json_file_path);
+     cameraMatrixList.push_back(std::get<1>(cameraParameters));
+     distCoeffsList.push_back(std::get<0>(cameraParameters));
+   }
+
    size_t i, j;
    size_t opimgWidth = images[0].cols * 3, opimgheight = images[0].rows * 3;
    opSize = Size(opimgWidth, opimgheight);
@@ -87,6 +104,8 @@ class imageStitcher
    chessboardDims.height = 6;
    pointsMapping = initialiseChessBoardPoints(opSize, chessboardDims.width, 
 		                             chessboardDims.height);
+   // charuco board
+   computeHomographyCharucoBoard(images[0], 0);
 
 
    min_x = std::numeric_limits<int>::max();
@@ -198,7 +217,7 @@ class imageStitcher
   }
 
 
-  Mat computeHomographyChessBoard(Mat image)
+  Mat computeHomographyChessBoard(Mat& image)
   {
     bool found;
     vector<Point2f> detectedPoints;
@@ -232,6 +251,72 @@ class imageStitcher
 
 
   }
+
+
+  Mat computeHomographyCharucoBoardWithCameraParameters(Mat& image, int imageNo)
+  {
+
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
+    cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
+
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f> > markerCorners;
+    cv::aruco::detectMarkers(image, board->dictionary, markerCorners, markerIds, params);
+
+    // if at least one marker detected
+    if (markerIds.size() > 0) {
+        cv::aruco::drawDetectedMarkers(image, markerCorners, markerIds);
+        std::vector<cv::Point2f> charucoCorners;
+        std::vector<int> charucoIds;
+        cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, image, board, charucoCorners, charucoIds, 
+			                     cameraMatrixList[imageNo], distCoeffsList[imageNo]);
+        // if at least one charuco corner detected
+        if (charucoIds.size() > 0) 
+	{
+            cv::Scalar color = cv::Scalar(255, 0, 0);
+            cv::aruco::drawDetectedCornersCharuco(image, charucoCorners, charucoIds, color);
+            cv::Vec3d rvec, tvec;
+            // cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
+            bool valid = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrixList[imageNo], distCoeffsList[imageNo], rvec, tvec);
+            // if charuco pose is valid
+            if (valid)
+                cv::aruco::drawAxis(image, cameraMatrixList[imageNo], distCoeffsList[imageNo], rvec, tvec, 0.1f);
+        }
+    }
+    cv::imshow("out", image);
+    cv::waitKey(0);
+  }
+
+  Mat computeHomographyCharucoBoard(Mat& image, int imageNo)
+  {
+
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
+    cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
+    params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
+    cv::Mat imageCopy;
+    imageCopy = image.clone();
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f> > markerCorners;
+    cv::aruco::detectMarkers(image, board->dictionary, markerCorners, markerIds, params);
+    //or
+    //cv::aruco::detectMarkers(image, dictionary, markerCorners, markerIds, params);
+    // if at least one marker detected
+    if (markerIds.size() > 0) 
+    {
+       cv::aruco::drawDetectedMarkers(imageCopy, markerCorners, markerIds);
+       std::vector<cv::Point2f> charucoCorners;
+       std::vector<int> charucoIds;
+       cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, image, board, charucoCorners, charucoIds);
+       // if at least one charuco corner detected
+       if (charucoIds.size() > 0)
+          cv::aruco::drawDetectedCornersCharuco(imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
+     }
+        cv::imshow("out", imageCopy);
+        cv::waitKey(30);
+  }
+
 };
 
 int main(void)
@@ -239,11 +324,13 @@ int main(void)
   cout<<"started capture";
   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
 
-  // frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
-  //	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
-
   frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
+
+  // frameGrabber imageTransferObj("./config/video_config/room_light_charuco.fmt", false);
+
+  // frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", true,
+  //	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
   imageTransferObj.transferAllImagestoPC();
   vector<Mat> images;
   images.push_back(imageTransferObj.image0);
