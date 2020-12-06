@@ -193,11 +193,21 @@ class ParallelPixelTransfer: public ParallelLoopBody
   image = dst;
   }
 
-int getMaxAreaContourId(vector <vector<cv::Point>> contours) 
+int getMaxAreaContourId(vector <vector<cv::Point>> contours, Point2f robotPosition) 
 {
     double maxArea = 0;
+    int nearnessThreshold=20;
     int maxAreaContourId = -1;
     for (int j = 0; j < contours.size(); j++) {
+
+        auto M = moments(contours[j]);
+        int cx = int(M.m10 / M.m00);
+        int cy = int(M.m01 / M.m00);
+
+	if(pow(pow(cx-robotPosition.x, 2) + pow(cy - robotPosition.y, 2), 0.5) < nearnessThreshold)
+	{
+          continue;
+	}
         double newArea = cv::contourArea(contours.at(j));
         if (newArea > maxArea) {
             maxArea = newArea;

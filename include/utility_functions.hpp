@@ -42,7 +42,7 @@ Mat stitchImageschessBoard(Mat stitchedImage, Mat ipImage, Mat Homography);
 void* WarpandStitchImages(void *arguments);
 
 void performLensCorrection(Mat& image, int imageNo, string lensCorrectionFolderPath);
-int getMaxAreaContourId(vector <vector<cv::Point>> contours);
+int getMaxAreaContourId(vector <vector<cv::Point>> contours, Point2f);
 string return_date_header();
 string getFolderPath();
 string return_date_time_header();

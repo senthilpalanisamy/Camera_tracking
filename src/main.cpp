@@ -3,6 +3,8 @@
 #include <string>
 #include <iostream>
 
+#include <opencv2/aruco.hpp>
+
 #include "backGroundSubtraction.hpp"
 #include "utility_functions.hpp"
 #include "simple_capture.hpp"
@@ -18,6 +20,24 @@ using std::to_string;
 using cv::Size;
 using cv::Point;
 using cv::Scalar;
+
+Point2f detectRobotPosition(Mat inputImage)
+{
+
+  std::vector<int> markerIds;
+  std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+  cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
+  cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+  cv::resize(inputImage, inputImage, cv::Size(inputImage.cols * 0.25, inputImage.rows * 0.25), 0, 0, cv::INTER_LINEAR);
+  cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
+  auto robotContour = markerCorners[0];
+  auto M = cv::moments(robotContour);
+  float cX = float(M.m10 / M.m00);
+  float cY = float(M.m01 / M.m00);
+  return {cX, cY};
+}
+
+
 
 
 
@@ -79,14 +99,17 @@ int main()
 
 
 
-  vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
+  vector<future<Point2f>> robotPositionFutures;
+  robotPositionFutures.resize(4);
+
 
   while(true)
   {
 
     auto start = high_resolution_clock::now();
     vector<Mat> foregroundImages;
+    vector<vector<vector<Point>>> allContours;
 
     imageTransferObj.transferAllImagestoPC();
 
@@ -95,16 +118,44 @@ int main()
     frames[2] = imageTransferObj.image2;
     frames[3] = imageTransferObj.image3;
 
+    for(int i=0; i<4; ++i)
+    {
+
+       robotPositionFutures[i] = std::async(std::launch::async, detectRobotPosition,
+          	                            frames[i]); 
+
+    }
+
 
 
     for(int i=0; i < cameraCount; ++i)
     {
 
+      vector<vector<Point> > contours;
       auto foregroundImage = bgsubs[i].processImage(frames[i]);
-
       findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+      allContours.push_back(std::move(contours));
+    }
 
-      int maxContourId = getMaxAreaContourId(contours), cx, cy;
+
+    auto start2 = high_resolution_clock::now();
+    for(int i=0; i < cameraCount; ++i)
+    {
+        while(robotPositionFutures[i].wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+    }
+
+    auto stop2 = high_resolution_clock::now();
+    auto duration2 = duration_cast<microseconds>(stop2 - start2);
+    cout << "\nwait time for marker detection: "<< duration2.count() << endl;
+
+    for(int i=0; i < cameraCount; ++i)
+     {
+      auto contours = allContours[i];
+
+
+      auto robotPosition = robotPositionFutures[i].get(); 
+
+      int maxContourId = getMaxAreaContourId(contours, robotPosition), cx, cy;
 
       if(maxContourId >= 0)
       {
