@@ -105,7 +105,7 @@ class imageStitcher
    }
 
    size_t i, j;
-   size_t opimgWidth = images[0].cols * 3, opimgheight = images[0].rows * 3;
+   size_t opimgWidth = images[0].cols * 6, opimgheight = images[0].rows * 6;
    opSize = Size(opimgWidth, opimgheight);
    chessboardDims.width = 9;
    chessboardDims.height = 6;
@@ -147,6 +147,8 @@ class imageStitcher
    allHomographies.push_back(homography);
    stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
    }
+   imwrite("stitchedImage.png", stitchedImage);
+   
 
 
    getbiggestBoundingboxImage(stitchedImage);
@@ -310,8 +312,8 @@ class imageStitcher
   unordered_map<int, Point2f> generateCornerPositions()
   {
     int id=0;
-    int scale = 80;
-    int offset = 1000;
+    int scale = 50;
+    int offset = int(opSize.width / 2);
     unordered_map<int, Point2f> cornerToPoint;
 
    for(int i=0; i < 14; ++i)
@@ -319,8 +321,8 @@ class imageStitcher
      for(int j=0; j < 14; ++j)
      {
 	Point2f cornerPoint; 
-	cornerPoint.x = i * scale+1000;
-	cornerPoint.y = j * scale+1000;
+	cornerPoint.x = i * scale+offset;
+	cornerPoint.y = j * scale+offset;
 	cornerToPoint[id] = cornerPoint;
         ++id;
      }
