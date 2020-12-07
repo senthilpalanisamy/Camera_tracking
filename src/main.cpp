@@ -23,18 +23,48 @@ using cv::Scalar;
 
 Point2f detectRobotPosition(Mat inputImage)
 {
+    Mat threshold;
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    vector<Point> selectedContour;
 
-  std::vector<int> markerIds;
-  std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-  cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
-  cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-  cv::resize(inputImage, inputImage, cv::Size(inputImage.cols * 0.25, inputImage.rows * 0.25), 0, 0, cv::INTER_LINEAR);
-  cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
-  auto robotContour = markerCorners[0];
+    cv::threshold(inputImage, threshold, 30, 255, THRESH_BINARY_INV);
+    findContours(threshold, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE );
+    int selectedIndex=-1;
+
+    for(int i=0; i < contours.size(); ++i)
+     {
+	std::vector<cv::Point> approx;
+	auto contour = contours[i];
+	double area = contourArea(contour);
+	if(area < 200 || area > 2000)
+	  continue;
+
+	auto peri = cv::arcLength(contour, true);
+	cv::approxPolyDP(contour, approx, 0.02 * peri, true);
+
+	if(approx.size() == 4 && fabs(contourArea(Mat(approx))) > 1000 &&
+	   isContourConvex(Mat(approx)))
+	{
+	 selectedContour = contour;
+	 selectedIndex = i;
+	 cout<<"here";
+	}
+
+     }
+
+  if(selectedIndex >= 0)
+  {
+
+  auto robotContour = selectedContour;
   auto M = cv::moments(robotContour);
   float cX = float(M.m10 / M.m00);
   float cY = float(M.m01 / M.m00);
   return {cX, cY};
+
+  }
+  cout<<"\nnot detected";
+  return {-1, -1};
 }
 
 
@@ -94,7 +124,7 @@ int main()
 		                rawVideoPath, true);
 
   auto stitchedVideorecorder = stitchedVideoRecorder(1, "stitched_output", stitchedImageSize, 10, false,
-		                                     rawVideoPath, true);
+  		                                     rawVideoPath, true);
 
 
 
@@ -109,21 +139,25 @@ int main()
 
     auto start = high_resolution_clock::now();
     vector<Mat> foregroundImages;
+
+    vector<Point> selectedContour;
     vector<vector<vector<Point>>> allContours;
 
     imageTransferObj.transferAllImagestoPC();
 
-    frames[0] = imageTransferObj.image0;
-    frames[1] = imageTransferObj.image1;
-    frames[2] = imageTransferObj.image2;
-    frames[3] = imageTransferObj.image3;
+    frames[0] = imageTransferObj.image0.clone();
+    frames[1] = imageTransferObj.image1.clone();
+    frames[2] = imageTransferObj.image2.clone();
+    frames[3] = imageTransferObj.image3.clone();
+
+    Mat threshold;
+
+    vector<vector<Point> > contours;
 
     for(int i=0; i<4; ++i)
     {
-
        robotPositionFutures[i] = std::async(std::launch::async, detectRobotPosition,
           	                            frames[i]); 
-
     }
 
 
@@ -157,6 +191,8 @@ int main()
 
       int maxContourId = getMaxAreaContourId(contours, robotPosition), cx, cy;
 
+      circle(frames[i], robotPosition, 30, cv::Scalar(255), -1);
+
       if(maxContourId >= 0)
       {
         auto M = moments(contours[maxContourId]);
@@ -173,8 +209,10 @@ int main()
 
     }
 
+    //auto allFrames = frames;
+
     rawVideoRecorder.writeFrames(frames);
-    stitchedVideorecorder .writeFrames(frames);
+    stitchedVideorecorder.writeFrames(frames);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << "\ntime: "<<duration.count() << endl;
