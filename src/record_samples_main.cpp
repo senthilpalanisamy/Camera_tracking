@@ -41,7 +41,7 @@ int main()
    // frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt", true,
    // 		                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
 
-   frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt");
+   frameGrabber imageTransferObj("./config/video_config/new_white_light.fmt");
    imageTransferObj.transferAllImagestoPC();
 
    auto image0 = imageTransferObj.image0;

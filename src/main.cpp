@@ -82,7 +82,7 @@ int main()
   cellAssociation.emplace_back("./config/cell_association/camera2.txt");
   cellAssociation.emplace_back("./config/cell_association/camera3.txt");
 
-  frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt");
+  frameGrabber imageTransferObj("./config/video_config/new_white_light.fmt");
 
 
   //VideoCapture cap(input_video);
@@ -142,8 +142,14 @@ int main()
 
     vector<Point> selectedContour;
     vector<vector<vector<Point>>> allContours;
+    int diff = 2;
 
+    auto start1 = high_resolution_clock::now();
     imageTransferObj.transferAllImagestoPC();
+
+    auto stop1 = high_resolution_clock::now();
+    auto duration1 = duration_cast<microseconds>(stop1 - start);
+    cout << "\nAcquisition time: "<< duration1.count() << endl;
 
     frames[0] = imageTransferObj.image0.clone();
     frames[1] = imageTransferObj.image1.clone();
@@ -151,6 +157,8 @@ int main()
     frames[3] = imageTransferObj.image3.clone();
 
     Mat threshold;
+
+    vector<int> previousClosestCell;
 
     vector<vector<Point> > contours;
 
@@ -200,8 +208,23 @@ int main()
         cy = int(M.m01 / M.m00);
         circle(frames[i], cv::Point(cx , cy), 30, cv::Scalar(255), -1);
 	auto associatedCell  = cellAssociation[i].return_closest_cell(cx, cy);
-	putText(frames[i], to_string(associatedCell[0]) + ","+ to_string(associatedCell[1]),
+
+	if(previousClosestCell.size() == 0)
+	{
+	 previousClosestCell = associatedCell;
+        }
+
+	if((abs(previousClosestCell[0] - associatedCell[0]) + abs(previousClosestCell[1] - associatedCell[1])) <= diff)
+	{
+	  putText(frames[i], to_string(associatedCell[0]) + ","+ to_string(associatedCell[1]),
 		Point(cx, cy-10), FONT_HERSHEY_COMPLEX_SMALL, 3, Scalar(0, 255, 0), 2);
+	  diff = 2;
+	  previousClosestCell = associatedCell;
+	 }
+	else
+	{
+	  diff += 1;
+	}
       }
 
       //foregroundImages.push_back(move(foregroundImage));
