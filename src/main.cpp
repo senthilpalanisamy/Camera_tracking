@@ -1,3 +1,10 @@
+// Author: Senthil Palanisamy
+// This is the main function that lauches all exection
+// 1. Does mice tracking using background subtraction
+// 2. Does robot tracking by using the black square placed on top of the robot
+// 3. Writes raw images acquired from cameras into a video
+// 4. Stitched images together ad writes a stitched video
+
 #include <vector>
 #include <fstream>
 #include <string>
@@ -22,6 +29,10 @@ using cv::Point;
 using cv::Scalar;
 
 Point2f detectRobotPosition(Mat inputImage)
+// Core assumption: the whole maze and everything in the maze is white / bright. Therefore
+// the only black square that could exist in the camera's view should belong to the robot.
+// The given image is inverse binary thresholded at 30 and the square contour within the 
+// thresholded image is found and reported to be the robot
 {
     Mat threshold;
     vector<vector<Point> > contours;
@@ -68,20 +79,19 @@ Point2f detectRobotPosition(Mat inputImage)
 }
 
 
-
-
-
 int main()
 {
   int cameraCount = 4;
   string experimentPath = getFolderPath();
 
+  // Reading all cell association file
   vector<cameraCellAssociator> cellAssociation;
   cellAssociation.emplace_back("./config/cell_association/camera0.txt");
   cellAssociation.emplace_back("./config/cell_association/camera1.txt");
   cellAssociation.emplace_back("./config/cell_association/camera2.txt");
   cellAssociation.emplace_back("./config/cell_association/camera3.txt");
 
+  // check if the camera video config fmt file is correct
   frameGrabber imageTransferObj("./config/video_config/new_white_light.fmt");
 
 
@@ -109,9 +119,7 @@ int main()
    infile >> stitchedImageSize.height;
 
 
-
-
-
+  // Intialising four background subtractors one for each view of the camera
   for(int i=0; i<cameraCount; ++i)
   {
     bgsubs.emplace_back(method, frames[i], false);
@@ -119,10 +127,10 @@ int main()
 
   string rawVideoPath = experimentPath + "/" + "unprocessed"; 
 
-
+  // Recorder object writing all raw images into videos
   auto rawVideoRecorder = videoRecorder(4, "bg_output", frames[0].size(), 10, false,
 		                rawVideoPath, true);
-
+  // Recorder object writing stitched image to a video
   auto stitchedVideorecorder = stitchedVideoRecorder(1, "stitched_output", stitchedImageSize, 10, false,
   		                                     rawVideoPath, true);
 
@@ -142,8 +150,15 @@ int main()
 
     vector<Point> selectedContour;
     vector<vector<vector<Point>>> allContours;
+    // temp logic for disambiguation. Each successive mice position can differ by 
+    // maximum of 2. If a mice is not detected in a frame, the maximum allowed difference
+    // between previous detected mice position and present mice position is increased and 
+    // the maximum allowed difference comes back to 2, when mice is detected in a frame
+    // again. This is very hueritic to disambiguate mice position from robot position and 
+    // should be scrutanised further
     int diff = 2;
 
+    // start image capture
     auto start1 = high_resolution_clock::now();
     imageTransferObj.transferAllImagestoPC();
 
@@ -162,14 +177,17 @@ int main()
 
     vector<vector<Point> > contours;
 
+    // launch parallel threads for detecting the robot position by detecting a black
+    // square
     for(int i=0; i<4; ++i)
     {
        robotPositionFutures[i] = std::async(std::launch::async, detectRobotPosition,
-          	                            frames[i]); 
+                                   frames[i]); 
     }
 
 
-
+    // do background subtraction and detect all contours on the background subtracted 
+    // image
     for(int i=0; i < cameraCount; ++i)
     {
 
@@ -178,9 +196,9 @@ int main()
       findContours( foregroundImage, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
       allContours.push_back(std::move(contours));
     }
-
-
     auto start2 = high_resolution_clock::now();
+
+    //  Check if robot localisation routnine has ended
     for(int i=0; i < cameraCount; ++i)
     {
         while(robotPositionFutures[i].wait_for(std::chrono::seconds(0)) != std::future_status::ready);
@@ -189,6 +207,9 @@ int main()
     auto stop2 = high_resolution_clock::now();
     auto duration2 = duration_cast<microseconds>(stop2 - start2);
     cout << "\nwait time for marker detection: "<< duration2.count() << endl;
+
+    // Process contours detected in each image to detect the mice, do cell association 
+    // for the mice and draw the mice position on the image
 
     for(int i=0; i < cameraCount; ++i)
      {
@@ -209,6 +230,14 @@ int main()
         circle(frames[i], cv::Point(cx , cy), 30, cv::Scalar(255), -1);
 	auto associatedCell  = cellAssociation[i].return_closest_cell(cx, cy);
 
+  // huerisitic logic for robot mice dismbiguation.
+  // temp logic for disambiguation. Each successive mice position can differ by 
+  // maximum of 2. If a mice is not detected in a frame, the maximum allowed difference
+  // between previous detected mice position and present mice position is increased and 
+  // the maximum allowed difference comes back to 2, when mice is detected in a frame
+  // again. This is very hueritic to disambiguate mice position from robot position and 
+  // should be scrutanised further
+
 	if(previousClosestCell.size() == 0)
 	{
 	 previousClosestCell = associatedCell;
@@ -227,13 +256,9 @@ int main()
 	}
       }
 
-      //foregroundImages.push_back(move(foregroundImage));
-
-
     }
 
-    //auto allFrames = frames;
-
+    // Write videos (Both raw image and stitched image)
     rawVideoRecorder.writeFrames(frames);
     stitchedVideorecorder.writeFrames(frames);
     auto stop = high_resolution_clock::now();
