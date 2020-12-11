@@ -1,3 +1,6 @@
+// Author: Senthil Palanisamy
+// File defining the image stitching class
+// This class constructs a stitched image given the input raw images
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -21,6 +24,10 @@ using std::endl;
 Mat outputImage;
 
 class ParallelPixelTransfer: public ParallelLoopBody
+// This is a class for parallelising the pixel transfer mechanism when constructing a 
+// stitched image (When constructing a stitched image, pixels from the raw image need to 
+// be transferred to the stitched image)
+// For more information visit https://docs.opencv.org/master/d7/dff/tutorial_how_to_use_OpenCV_parallel_for_.html
 {
   mutable Mat unwarpedImage;
   mutable Mat stitchedImage;
@@ -32,6 +39,9 @@ class ParallelPixelTransfer: public ParallelLoopBody
     }
 
     virtual void operator() (const Range& range) const CV_OVERRIDE
+    // The row and column count are combined into a signle continuous number and this
+    // "range" number is broken down into row and column index in the loop for parallel
+    // pixel transfer
     {
       int r=0;
       for(r = range.start; r < range.end; r++)
@@ -55,6 +65,17 @@ class ParallelPixelTransfer: public ParallelLoopBody
 
 imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
 		string lensCorrectionFolderPath_)
+  // Constructor for image stitching
+  // configPath - folder path which contains all the pre-calibrated camera homographies
+  //              This is the path where calibrate_homographies scripts stores the results
+  // doLensCorrection_ - should lens correction be performed inside this image stitching class
+  //                     If lens correction is performed before sending the image into this
+  //                     class, this should be set to false. If it is not perfomed before
+  //                     sending the images, this should be set to True
+  // lesCorrectionFolderPath_ - Path where json files describing lens distortion for each
+  //                            camera is placed
+  // Returns
+  // Stiched Image
   {
 
    vector<string> fileNames = {"camera1_to_ground_plane.txt", "camera2_to_ground_plane.txt", 
@@ -63,6 +84,8 @@ imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
    lensCorrectionFolderPath = lensCorrectionFolderPath_;
 
    double number;
+
+   // reading all homographies files
    for(int h_index=0; h_index < fileNames.size(); ++h_index)
    { 
      string fileName = fileNames[h_index];
@@ -84,6 +107,7 @@ imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
 
     }
 
+      // Reading size of the stitched image
      string imageSizePath = configPath + "image_size.txt";
      std::ifstream infile(imageSizePath);
      infile >> finalSize.width;
@@ -92,6 +116,7 @@ imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
 
 
   Mat imageStitcher::stitchImagesOnline(vector<Mat> images)
+  // Constructs a sitched image for the given images using pre-calibrated homopgrahies
   {
 
    Mat dstImage(finalSize, CV_8U, Scalar(0));
@@ -103,6 +128,11 @@ imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
 	   
      for(int i=0; i < 4; ++i)
      {
+       // TODO: This is a bad structure setup. For every image to be stitched, json 
+       // files are read everytime for getting lens distortion parameters. This is 
+       // very slow since hard disk access is very cost and hence, slows down the 
+       // speed of image stitching. Read the lens distortion parameters once inside the
+       // constructors and pass the read parameters to avoid repeated work
       performLensCorrection(images[i], i, lensCorrectionFolderPath);
      }
    }
