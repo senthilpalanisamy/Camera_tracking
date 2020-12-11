@@ -1,3 +1,5 @@
+// Author: Senthil Palanisamy
+// This file defines a class for capturing images from framGrabber memory
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>
@@ -28,6 +30,11 @@ using std::vector;
 
 frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
                            string lensCorrectionFolderPath_)
+  // Constructor for intialising the image capture using frame grabbers
+  // confifpath - path to video config file that is to be used
+  // doLensCorrection_  - A boolean indicating whether lens correction should be done
+  // lensCorrectionFolderPath_ - folderpath containing lens distortion and camera
+  //                             intrinsic parameters
   {
    pxd_PIXCIopen("", "", configPath);
 
@@ -56,8 +63,13 @@ frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
 
 
   void frameGrabber::transferImagetoPC(size_t frameGrabberNo)
+  // Transfers an image from the framegrabber memory to PC memory
+  // frameGrabberNo - The frame grabber number to be accessed. 
   {
     //cout<<"here";
+    // each PIXCI(R) unit stands for one bit in a 4 bit number. We can select any number 
+    // of framegrabber by setting bits. In this case, we are only trying to access one 
+    // particular camera and hence, we are tying to set only that particular bit
     size_t cameraNo = 1 << frameGrabberNo;
     //pxd_doSnap(cameraNo, 1, 0);
 
@@ -99,6 +111,7 @@ frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
   }
 
   void frameGrabber::transferAllImagestoPC()
+  // Transfer all 4 camera images from framegrabber memory to PC
   {
 
     for(size_t i=0; i < 4; i++)
@@ -124,6 +137,7 @@ frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
   }
 
   void frameGrabber::displayAllImages()
+  // A debugging function for seeing all camera images
   {
     imshow("image0", image0);
     imshow("image1", image1);
@@ -133,6 +147,7 @@ frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
   }
 
   frameGrabber::~frameGrabber()
+  // A destructor for freeing up all allocated memory
   {
 
 
