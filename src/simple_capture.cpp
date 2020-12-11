@@ -35,6 +35,7 @@ frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
   // doLensCorrection_  - A boolean indicating whether lens correction should be done
   // lensCorrectionFolderPath_ - folderpath containing lens distortion and camera
   //                             intrinsic parameters
+  // Lens distortion is not free. It takes upto 10 ms for correcting lens distortions
   {
    pxd_PIXCIopen("", "", configPath);
 
@@ -121,6 +122,8 @@ frameGrabber::frameGrabber(const char* configPath, bool doLensCorrection_,
 
     auto start = high_resolution_clock::now();
 
+    // TODO: Avoid doing file read in every image capture cycle. Read the file 
+    // once in the constructor to avoid repeated work slowing down capture
     if(doLensCorrection)
     {
       performLensCorrection(image0, 0, lensCorrectionFolderPath);
