@@ -1,3 +1,6 @@
+// Author: Senthil Palanisamy
+// This file defines a class for capturing images from framGrabber memory
+
 # ifndef SIMPLE_CAPTURE_INCLUDE_GAURD
 # define SIMPLE_CAPTURE_INCLUDE_GAURD
 

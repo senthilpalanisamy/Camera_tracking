@@ -1,3 +1,6 @@
+// Author: Senthil Palanisamy
+// A file describing some utility functions used across all the other scripts
+
 #ifndef UTILITY_FUNCTIONS_INCLUDE_GAURD
 #define UTILITY_FUNCTIONS_INCLUDE_GAURD
 

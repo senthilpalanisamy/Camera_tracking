@@ -1,3 +1,8 @@
+// Author: Senthil Palanisamy
+// This file contains a class that is used for writing images into video. There is one
+// class for raw images and one class for stitching images and writing video as a stitched
+// image
+
 #ifndef VIDEO_RECORDER_INCLUDE_GAURD
 #define VIDEO_RECORDER_INCLUDE_GAURD
 

@@ -1,3 +1,6 @@
+// Author: Senthil Palanisamy
+// This file defines the class for background subtraction. This is a convenience
+// class for initializing and using OpenCV background subtraction
 #ifndef BACKGROUND_SUBTRACTION
 #define BACKGROUND_SUBTRACTION
 

@@ -1,3 +1,7 @@
+// Author: Senthil Palanisamy
+// A convenience class defining object tracking for images
+// TODO: This is an incomplete file and may not even compile
+
 #ifndef OBJECT_TRACKING_INCLUDE_GAURD
 #define OBJECT_TRACKING_INCLUDE_GAURD
 

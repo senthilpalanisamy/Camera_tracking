@@ -1,3 +1,13 @@
+// Author: Senthil Palanisamy
+// An example file showing how a python interpreter can be invoked from C++
+// using pybind11 and to load deeplabcut model and to do frame inference for predicting
+// mice pose through C++
+// Be sure to have source the python environment before running these scripts. I have
+// maintained python environments in virtual environment. Typing "workon deeplabcut" in 
+// the terminal should source the environment. But actual deeplabcut authors have a docker
+// container as well. Either structure works but be sure that necessary python environment
+// is sourced before the script execution
+
 #ifndef DEEP_LAB_FRAME_INFERENCE
 #define DEEP_LAB_FRAME_INFERENCE
 #include <pybind11/embed.h>
