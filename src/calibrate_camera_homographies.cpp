@@ -1,3 +1,7 @@
+// Author: Senthil Palanisamy
+// This file contains code for estimating the camera homographies after a checker board
+// or a charuco board has been placed in the field of view of a camera
+
 #include <iostream>
 #include <fstream>
 #include <limits>
@@ -31,6 +35,7 @@ using std::to_string;
 
 
 std::ofstream openFile(string inputFilePath)
+ // open a file. Check if a file has been opened correctly or else raise an exception
 {
 
    std::ofstream inFile;
@@ -60,11 +65,14 @@ class imageStitcher
   Size chessboardDims;
   vector<Mat> cameraMatrixList;
   vector<vector<double>> distCoeffsList;
-  vector<int> idsToremove;
   unordered_map<int, Point2f> cornerToPoint;
 
   vector<Point2f> initialiseChessBoardPoints(Size opSize, int boardWidth=9, 
                                              int boardHeight=7)
+  // This function initialises manual points for each checker board corner. Each 
+  // detected checker board corner needs to associated with a known position in the 
+  // stitched image view so that the homography between the raw camera view and the 
+  // stitched image view can be calculated
   {
 
      float squareSize = 30;
@@ -91,10 +99,14 @@ class imageStitcher
 
   imageStitcher(vector<Mat> images, string opPath="./config/camera_homographies",
 		string cameraParametersPath="./config/camera_intrinsics_1024x1024")
+   // Constructor for estimating camera homographies
+   // images - A vector containing all four camera images
+   // opPath - path where the estimated homographies should be written
+   // cameraParametersPath - Path which contains jsons of camera intrinsic parameters and
+   //                        lens distortion parameters
   {
-    idsToremove = {0, 4, 5, 6, 8, 9, 10, 16, 17, 18, 19, 20, 21, 22, 23};
 
-
+    // Read camera parameters for all cameras
    for(int i=0; i < 4; ++i)
    {
 
@@ -105,21 +117,18 @@ class imageStitcher
    }
 
    size_t i, j;
+   // Stitched image size. Keep it so high so that all transformed images are still
+   // visible in the stitched image
    size_t opimgWidth = images[0].cols * 6, opimgheight = images[0].rows * 6;
    opSize = Size(opimgWidth, opimgheight);
    chessboardDims.width = 9;
    chessboardDims.height = 6;
+   // intialising points for checkerboard
    pointsMapping = initialiseChessBoardPoints(opSize, chessboardDims.width, 
 		                             chessboardDims.height);
 
+   // initialisng points for charuco board
    cornerToPoint = generateCornerPositions();
-   // charuco board
-   // for(int i=0; i < 4; ++i)
-   // {
-
-   // computeHomographyCharucoBoard(images[i], i);
-
-   // }
 
 
    min_x = std::numeric_limits<int>::max();
@@ -130,10 +139,11 @@ class imageStitcher
 
    Mat stitchedImage(opSize, CV_8UC1, Scalar(0));
 
+   // create output directory where the homography results should be written
    string command = "mkdir -p "+ opPath;
    auto _ = system(command.c_str());
 
-
+   // Find homography for all images and contruct a stitched image
    for(i=0; i < images.size(); i++)
    {
 
@@ -141,35 +151,29 @@ class imageStitcher
    waitKey(0);
 
    Mat ipImage = images[i];
-   //Mat homography = computeHomographyChessBoard(ipImage);
 
    Mat homography = computeHomographyCharucoBoard(ipImage);
    allHomographies.push_back(homography);
    stitchedImage = stitchImageschessBoard(stitchedImage, ipImage, homography);
    }
    imwrite("stitchedImage.png", stitchedImage);
-   
 
 
+   // Finding the bounding box where the stitched image actually lies
    getbiggestBoundingboxImage(stitchedImage);
 
-
+   // Adjusting all camera homographies so that all images are transfomed into the 
+   // reduced true size image
     for(auto& h:allHomographies)
     {
 
     // h = h.inv();
     double data[9] = {1, 0, -(double) min_x, 0, 1, -(double) min_y, 0, 0, 1};
     Mat trans = Mat(3, 3, CV_64F, data); 
-    //double scale  = h.at<double>(2,2) - h.at<double>(2,0);
-    //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
-    //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
     h = trans * h;
-
-    //h.at<double>(0,2) = h.at<double>(0,2) - min_x;
-    //h.at<double>(1,2) = h.at<double>(1,2) - min_y;
-    // h = h.inv();
-
     }
+
+    // Write the estimated homographies to the results directory
    vector<string> fileNames = {"camera1_to_ground_plane.txt", "camera2_to_ground_plane.txt", 
 	                       "camera3_to_ground_plane.txt", "camera4_to_ground_plane.txt"};
    for(int h_index=0; h_index < 4; ++h_index)
@@ -196,6 +200,10 @@ class imageStitcher
   }
 
   void getbiggestBoundingboxImage(const Mat& image)
+  // iterate through all pixels in the stitched image and find the min_x, min_y,
+  // max_x, max_y where the pixel values are non-zero. These values can be clubbed to
+  // form two points: (min_x, min_y), (max_x, max_y), which define the bounding box
+  // for the stitched image
   {
 
 
@@ -236,6 +244,10 @@ class imageStitcher
 
 
   Mat computeHomographyChessBoard(Mat& image)
+  // Finds homography by detecting a checker board within the given image and uses the 
+  // corners to the checker board to associate against corresponding points defined manually
+  // image - camera image containing checkerboard image for which homography is to be
+  // estimated
   {
     bool found;
     vector<Point2f> detectedPoints;
@@ -249,9 +261,6 @@ class imageStitcher
                                    Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 30, 0.0001  ));
        drawChessboardCorners( image, chessboardDims, Mat(detectedPoints), found);
 
-       //H = findHomography( pointsMapping, detectedPoints, RANSAC);
-       // H = findHomography( detectedPoints, pointsMapping, RANSAC, 1);
-       // H = findHomography( detectedPoints, pointsMapping, LMEDS);
        H = findHomography( detectedPoints, pointsMapping, 0);
 
        #ifdef DEBUG
@@ -272,44 +281,11 @@ class imageStitcher
   }
 
 
-  Mat computeHomographyCharucoBoardWithCameraParameters(Mat& image, int imageNo)
-  {
-
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
-    cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
-
-    std::vector<int> markerIds, newmarkerIds;
-    std::vector<std::vector<cv::Point2f> > markerCorners, newmarkerCorners;
-    cv::aruco::detectMarkers(image, board->dictionary, markerCorners, markerIds, params);
-
-    // if at least one marker detected
-    if (markerIds.size() > 0) {
-        cv::aruco::drawDetectedMarkers(image, markerCorners, markerIds);
-        std::vector<cv::Point2f> charucoCorners;
-        std::vector<int> charucoIds;
-        cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, image, board, charucoCorners, charucoIds, 
-			                     cameraMatrixList[imageNo], distCoeffsList[imageNo]);
-
-        // if at least one charuco corner detected
-        if (charucoIds.size() > 0) 
-	{
-            cv::Scalar color = cv::Scalar(255, 0, 0);
-            cv::aruco::drawDetectedCornersCharuco(image, charucoCorners, charucoIds, color);
-            cv::Vec3d rvec, tvec;
-            // cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
-            bool valid = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrixList[imageNo], distCoeffsList[imageNo], rvec, tvec);
-            // if charuco pose is valid
-            if (valid)
-                cv::aruco::drawAxis(image, cameraMatrixList[imageNo], distCoeffsList[imageNo], rvec, tvec, 0.1f);
-        }
-    }
-
-    cv::imshow("out", image);
-    cv::waitKey(0);
-  }
-
   unordered_map<int, Point2f> generateCornerPositions()
+  // Generates a known corner position for each charuco board corners
+  // Returns
+  // A map which given a charuco index gives out its true corner position in the stitched 
+  // image view
   {
     int id=0;
     int scale = 50;
@@ -331,6 +307,9 @@ class imageStitcher
   }
 
   Mat computeHomographyCharucoBoard(Mat& image)
+  // This function estimates homography for the given image to the ground plan. The input
+  // image should contain a partially observable charuco board. It detects charuco
+  // points and assocaites each point with a known position to determine the homography
   {
 
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
@@ -381,6 +360,7 @@ int main(void)
   cout<<"started capture";
   // frameGrabber imageTransferObj("./config/red_light_with_binning.fmt");
 
+  // Check if the correct config file is supplied to frame grabber
    frameGrabber imageTransferObj("./config/video_config/room_light_charuco2.fmt", true,
   	                 "/home/senthil/work/Camera_tracking/config/camera_intrinsics_1024x1024");
 
@@ -398,6 +378,7 @@ int main(void)
 
 
   // images.push_back(dst1);
+  // Estimates homography for the given images and writes them to the given directory
   imageStitcher imgStitcher(images);
 
  } 
