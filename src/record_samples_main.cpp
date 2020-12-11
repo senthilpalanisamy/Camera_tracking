@@ -29,6 +29,7 @@ int main()
 
    // Gets a folder name and accepts the folder name only if its unique. It repeats 
    // asking for folder name until a unique name is entered
+   // TODO:Replace this logic with function from utility functions. Repeated code
 
    while(isFolderPathUnique)
    {

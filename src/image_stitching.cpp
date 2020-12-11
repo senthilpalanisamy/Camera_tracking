@@ -21,7 +21,7 @@ using std::to_string;
 using std::cout;
 using std::endl;
 
-Mat outputImage;
+// TODO: Remove this duplicate code and use this code from utilities function
 
 class ParallelPixelTransfer: public ParallelLoopBody
 // This is a class for parallelising the pixel transfer mechanism when constructing a 
@@ -62,6 +62,9 @@ class ParallelPixelTransfer: public ParallelLoopBody
     }
 
 };
+
+
+
 
 imageStitcher::imageStitcher(string configPath, bool doLensCorrection_,
 		string lensCorrectionFolderPath_)

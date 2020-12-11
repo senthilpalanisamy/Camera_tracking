@@ -1,3 +1,6 @@
+// Author: Senthil Palanisamy
+// A file describing some utility functions used across all the other scripts
+
 #include <pthread.h>
 #include <fstream>
 #include <iostream>
@@ -21,6 +24,8 @@ pthread_mutex_t lock;
 
 
 cameraCellAssociator::cameraCellAssociator(string fileName)
+  // CellAssociator call associates a given mice position with a cell in which it exits
+  // fileName- filePath where the cellAssociation config file is stored
 {
 
    //ifstream myfile("./config/camera0.txt");
@@ -37,6 +42,8 @@ cameraCellAssociator::cameraCellAssociator(string fileName)
 
 
 vector<int> cameraCellAssociator::return_closest_cell(int mice_x, int mice_y)
+  // Given a x,y mice location, this function returns the cell which contains the given x,y
+  // pixel location
   {
     vector<double> distances(cell_centers.size());
 
@@ -51,10 +58,11 @@ vector<int> cameraCellAssociator::return_closest_cell(int mice_x, int mice_y)
     return cell;
   }
 
-
-
-
 class ParallelPixelTransfer: public ParallelLoopBody
+// This is a class for parallelising the pixel transfer mechanism when constructing a 
+// stitched image (When constructing a stitched image, pixels from the raw image need to 
+// be transferred to the stitched image)
+// For more information visit https://docs.opencv.org/master/d7/dff/tutorial_how_to_use_OpenCV_parallel_for_.html
 {
   mutable Mat unwarpedImage;
   mutable Mat stitchedImage;
@@ -66,6 +74,9 @@ class ParallelPixelTransfer: public ParallelLoopBody
     }
 
     virtual void operator() (const Range& range) const CV_OVERRIDE
+    // The row and column count are combined into a signle continuous number and this
+    // "range" number is broken down into row and column index in the loop for parallel
+    // pixel transfer
     {
       int r=0;
       for(r = range.start; r < range.end; r++)
@@ -87,32 +98,13 @@ class ParallelPixelTransfer: public ParallelLoopBody
 
 };
 
-  void* WarpandStitchImages(void *arguments)
-  {
-    cout<<"\nthread started\n";
-
-    Mat imageUnwarped;
-    ImageStitchData *stitchArgs = (ImageStitchData*) arguments;
-
-    pthread_mutex_lock(&lock);
-
-    Size warpedImageSize = stitchArgs->dstImage.size();
-    // warpPerspective (stitchArgs->inputImage, imageUnwarped, stitchArgs->homography,
-    //                  warpedImageSize,INTER_LINEAR + WARP_INVERSE_MAP);
-
-    warpPerspective (stitchArgs->inputImage, imageUnwarped, stitchArgs->homography,
-                     warpedImageSize, INTER_LINEAR);
-
-    ParallelPixelTransfer parellelPixelTransfer(imageUnwarped, stitchArgs->dstImage);
-    parallel_for_(Range(0, imageUnwarped.rows * imageUnwarped.cols), parellelPixelTransfer);
-    pthread_mutex_unlock(&lock);
-
-    return NULL;
-    }
 
 
 
   Mat stitchImageschessBoard(Mat stitchedImage, Mat ipImage, Mat Homography)
+  // This function transforms the given image to the common stitched image view using
+  // the given homography and transfers pixels from the trasnformed image to the common
+  // stitched image
   {
 
     Mat imageUnwarped;
@@ -146,6 +138,9 @@ class ParallelPixelTransfer: public ParallelLoopBody
   }
 
  tuple<vector<double>, Mat> readCameraParameters(string jsonFilePath)
+  // A function for reading camera parameres from the given path
+  // Returns
+  // A tuple containing lens distortion parameters and camera intrinsic parameters
  {
 
   vector<double> distCoeffs(5);
@@ -175,6 +170,14 @@ class ParallelPixelTransfer: public ParallelLoopBody
  }
 
  void performLensCorrection(Mat& image, int imageNo, string lensCorrectionFolderPath)
+  // This function performs lens distortion correction for the given image
+  // image - this is an input output parameter, which contains the input image and this
+  //         image will get replaced by the transformed image
+  // imageNo - cameraNo from which the image was captured. This information is critical
+  //           since we only send the folder path containing lens distortion parameters 
+  //           of all cameras and hence, this number is used to read appropriate files
+  // lensCorrectionFolderPath - path containing json files of camera intrinsics and 
+  //                            lens distortion coefficients
   {
 
   cv::Size imageSize(cv::Size(image.cols,image.rows));
@@ -194,6 +197,11 @@ class ParallelPixelTransfer: public ParallelLoopBody
   }
 
 int getMaxAreaContourId(vector <vector<cv::Point>> contours, Point2f robotPosition) 
+ // This function returns the id of the contour that has the maximum area in the image
+ // Note: The maximum contour area has to greater than 600 or else -1 is returned.
+ // This 600 is chosen in accordance with the minimum mice movement observed so that 
+ // this function returns the contour ID containing the mice in the background subtracted 
+ // image
 {
     double maxArea = 0;
     int nearnessThreshold=200;
@@ -226,6 +234,7 @@ int getMaxAreaContourId(vector <vector<cv::Point>> contours, Point2f robotPositi
 }
 
 string return_date_header()
+ // Returns the date header. The format is mm_dd
 {
 
    time_t now = time(0);
@@ -236,6 +245,8 @@ string return_date_header()
 }
 
 string getFolderPath()
+ // A function for getting a unique folder path. This functions keeps insisting for
+ // an unique name until it is entered
 {
 
    string folder_name, outputPath;
@@ -254,6 +265,8 @@ string getFolderPath()
 }
 
 string return_date_time_header()
+ // Returns a date_time stamp
+ // The format is MM_DD_HH:MM:SS(month_day_hour:min:seconds)
 {
 
    time_t now = time(0);
