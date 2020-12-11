@@ -56,3 +56,26 @@ A description of all executables:-
                       4. Stitches images togther and writes the stitched image
                       into the specified folder
 
+Dependencies:-
+1. OpenCV - Should work with any version but I was using 4.0.0. More 
+            importantly, opencv should be compiled with all optimisation
+            options to do fast processing. In particular, these are some of 
+            the options that I compiled opencv with 
+            cmake -D CMAKE_BUILD_TYPE=RELEASE -D WITH_TBB=ON -D WITH_OPENMP=ON -D WITH_IPP=ON -
+            D BUILD_EXAMPLES=OFF -D WITH_NVCUVID=ON D WITH_CUDA=ON D BUILD_DOCS=OFF 
+            -D BUILD_PERF_TESTS=OFF -D BUILD_TESTS=OFF -D WITH_CSTRIPES=ON 
+            -D WITH_OPENCL=ON      -D CMAKE_INSTALL_PREFIX=/usr/local  
+            -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules     
+            -D OPENCV_ENABLE_NONFREE=ON ..
+            For any system with a GPU and intel processer this should stay the
+            same. If the processor is different, check with openCV to figure
+            out what options can be specified to utilise the low level
+            instruction level parallelism, if any exists for the specified hardware
+2. Pybind11 -  This is only needed if you are interested in using the C++
+               warpper so that the deeplabcut inference code can be called
+               from C++. The specific version that this code has been tested
+               against is  v2.2.0
+3. xcllib  - This is the epix C++ library for accessing frame grabber and 
+             provides a means for getting images programmatically. More
+             instructions on setting this up is provided in a seperate README.
+
