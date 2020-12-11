@@ -1,3 +1,7 @@
+// Author: Senthil Palanisamy
+// A convenience class defining object tracking for images
+// TODO: This is an incomplete file and may not even compile
+
 #include<objectTracking.hpp>
 using cv::imshow;
 #define SSTR( x ) static_cast< std::ostringstream & >( \
@@ -5,6 +9,12 @@ using cv::imshow;
 
   objectTracking::objectTracking(const string& trackerType, const Rect2d& bbox_, 
                  const Mat& firstFrame, bool isVisualise_)
+  // Constructor for objectTracking
+  // trackerType - An enum defining objecttracking type, Use MOOSE for very high speed
+  // tracking
+  // bbox_ - initial position of the object in the given camera image
+  // firstFrame - first image where the tracking should begin
+  // isVisualise_ - Visualise results for debugging
   {
 
 
@@ -40,6 +50,8 @@ using cv::imshow;
   }
 
   void objectTracking::trackObject(Mat& nextFrame)
+  // Track the object in each successive frame
+  // nextFrame - Mat image in which the object is to be tracked
   {
       bool ok = tracker->update(frame, bbox);
       if(isVisualise)
@@ -49,6 +61,8 @@ using cv::imshow;
   }
 
   void objectTracking::visualiseTracker(Mat& nextFrame, bool isTrackingSuccess)
+  // A function for visualising the tracker results. Shows the tracked bounding
+  // box on the image throughout the video
   {
     if(isTrackingSuccess)
     {

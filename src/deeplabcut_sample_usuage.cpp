@@ -1,3 +1,7 @@
+// Author: Senthil Palanisamy
+// A file showing how the pybind11 wrapper can be used for calling the python
+// script for calling deeplabcut
+
 #include<deeplabFrameInference.hpp>
 
 using cv::imread;
