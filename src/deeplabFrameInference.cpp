@@ -1,11 +1,20 @@
+// Author: Senthil Palanisamy
+// An example file showing how a python interpreter can be invoked from C++
+// using pybind11 and to load deeplabcut model and to do frame inference for predicting
+// mice pose through C++
+// Be sure to have source the python environment before running these scripts. I have
+// maintained python environments in virtual environment. Typing "workon deeplabcut" in 
+// the terminal should source the environment. But actual deeplabcut authors have a docker
+// container as well. Either structure works but be sure that necessary python environment
+// is sourced before the script execution
+
 #include<deeplabFrameInference.hpp>
 
 using cv::imread;
 
 DeepLabFrameInference::DeepLabFrameInference()
+  // Sets the python enviroment and invokes  the python interpretor
   {
-
-
     setenv("PYTHONPATH","./src",1);
     Py_Initialize ();
     import_array1();
@@ -20,6 +29,8 @@ DeepLabFrameInference::DeepLabFrameInference()
   }
 
   void DeepLabFrameInference::predictPoseForImage(Mat& image)
+  // call the deeplabcut module by sending the image and get back a numpy array 
+  // for predicting mice pose
    {
 
     dims[0] = image.rows;
@@ -43,6 +54,7 @@ DeepLabFrameInference::DeepLabFrameInference()
    }
 
   DeepLabFrameInference::~DeepLabFrameInference()
+  // Destroy the python interpretor and the modules imported
    {
 
     Py_DECREF(pName);
@@ -55,7 +67,7 @@ DeepLabFrameInference::DeepLabFrameInference()
    }
 
 
-
+// An example showing how deeplab cut could be utilised
 //int main (int argc, char *argv[])
 //{
 //    // float data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
