@@ -1,3 +1,7 @@
+// Author: Senthil Palanisamy
+// This file defines the class for background subtraction. This is a convenience
+// class for initializing and using OpenCV background subtraction
+
 #include <ctime>
 #include <fstream>
 #include <sys/stat.h>
@@ -15,11 +19,15 @@ using cv::Scalar;
 
 BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage, 
                                            bool isVisualise_)
+// Constructor
+// m_ - an enum which describes the method used for background subtraction. Choices
+// allowed are MOG or MOG2
+// firstImage - Intial OpenCv mat image for the algorithm
+// isVisualise_ - enables or disables visualizing provisions. Useful when debugging
+// algorithms
   {
 
     GpuMat d_frame(firstImage);
-    //imshow("image", firstImage);
-    //waitKey(0);
     if(m == MOG)
     {
       mog = cuda::createBackgroundSubtractorMOG();
@@ -44,6 +52,8 @@ BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage,
   }
 
   Mat BackGroundSubtractor::processImage(const Mat& nextFrame)
+  // Process each image for the background subtraction pipeline
+  // nextFrame - each successive image to be fed into the algorithm
   {
 
     d_frame.upload(nextFrame);
@@ -70,6 +80,8 @@ BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage,
   }
 
   void BackGroundSubtractor::visualiseImage(const Mat& nextFrame)
+  // A utility function for visualizing all background subtraction outputs.
+  // nextFrame - the frame currently processed.
   {
 
   d_fgimg.create(d_frame.size(), d_frame.type());
@@ -88,7 +100,3 @@ BackGroundSubtractor::BackGroundSubtractor(Method m_, const Mat& firstImage,
       imshow("mean background image", bgimg);
   waitKey(30);
   }
-
-
-
-

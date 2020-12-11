@@ -1,3 +1,6 @@
+# Author: Senthil Palanisamy
+# This file contains a class for running deeplabcut inference on a single frame
+
 import sys
 import os.path
 # sys.path.append('/home/senthil/anaconda3/envs/DLC-GPU/lib/python3.7/site-packages')
@@ -18,6 +21,21 @@ from deeplabcut.utils.auxfun_videos import imread
 class DLC_frame_inference:
   def __init__(self, config ,shuffle=1, trainingsetindex=0, 
                      gputouse=None, rgb=True):
+    '''
+    The constructor loads the deeplearning model from the specified path
+    config - path where the model config.yaml file is stored
+    shuffle - Not sure how it affects the algorithm. It was set to one
+             inside the core library. So keep sticking to 1 unless you 
+             have a strong need to change
+    trainingsetindex - always set it 0. Not sure of its effect. Used deep inside
+                      the core library
+    gputouse - gpu card number to use. The algorithm uses GPU by default 
+               when tensorflow GPU version is installed. If GPU is not
+               getting utlised, this is a good parameter to check. But setting
+               this to None in our present system still utilises the GPU.
+    rgd - set to true if we use a RGB image. For grayscale image, which is our
+          case this is always False
+    '''
 
     if 'TF_CUDNN_USE_AUTOTUNE' in os.environ:
         del os.environ['TF_CUDNN_USE_AUTOTUNE'] #was potentially set during training
@@ -105,7 +123,13 @@ class DLC_frame_inference:
 
 
   def infer_mice_pose(self, frame):
-
+    '''
+    A function for predicitng the mice pose for a given frame
+    frame - image for which mice pose prediction is to be made
+    Returns:-
+    A N X 2 array of points where N denotes the number of mice body parts. Thus
+    x,y location of each body part is given out by the network
+    '''
 
     PredictedData = np.zeros((1, 3 * len(self.dlc_cfg['all_joints_names'])))
     frame=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -126,16 +150,22 @@ class DLC_frame_inference:
     return PredictedData
 
 
+# A global variable is needed if this file is planned to be imported into
+# other python files. Importing this initialises the object where model loading
+# is done so that the loaded model can be used for repeated inference.
+# A key aspect of model inference - the first run might be run very slow. Never
+# time the performance of your model based on the first run. Always ignore the
+# first run for timing analysis
 
 config='./models/demo-senthil-2020-08-09/config.yaml'
 inference_object = DLC_frame_inference(config)
+
+# This is the function that can be called from C++ using pybind11
+# Frame is a numpy array. Mechansim to pass an image as a numpy array from
+# a C++ code is shown in the example C++ code
 def infer(frame):
-  #cv2.imshow('image', frame)
-  #cv2.waitkey(0)
-  #frame = cv2.imread('./test.jpeg')
   inference_object.infer_mice_pose(frame) 
   cv2.imwrite('sample_test.jpeg', frame)
-  # inference_object.infer_mice_pose(frame) 
 
 # if __name__=='__main__':
 #     infer(0)
