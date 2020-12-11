@@ -1,3 +1,7 @@
+// Author: Senthil Palanisamy
+// This file is a convinience script for recording samples from cameras while
+// doing experiment
+
 #include <iostream>
 #include <ctime>
 #include <sys/stat.h>
@@ -23,6 +27,9 @@ int main()
    string folder_name, outputPath;
    bool isFolderPathUnique = true;
 
+   // Gets a folder name and accepts the folder name only if its unique. It repeats 
+   // asking for folder name until a unique name is entered
+
    while(isFolderPathUnique)
    {
 
@@ -36,6 +43,8 @@ int main()
 
 
 
+   // While initialising frame grabbers, be sure to specify righ
+   // video config fmt files. A wrong file will result in image capture failue
    // frameGrabber imageTransferObj("./config/video_config/room_light_binning.fmt", false);
 
    // frameGrabber imageTransferObj("./config/video_config/red_light_with_binning.fmt", true,
@@ -54,14 +63,21 @@ int main()
    infile >> stitchedImageSize.width;
    infile >> stitchedImageSize.height;
 
+   // A recorder for writing raw images
    auto recorder = videoRecorder(4, "raw_video", image0.size(),
 		                 30, false, outputPath);
+   // A recorder for writing stitched images
    auto stitchedRecorder = stitchedVideoRecorder(1, "stitchedVideo", stitchedImageSize,
 		                                30, false, outputPath); 
 
    while(true) 
    {
 
+    // Gets all images from the frame grabber memory
+    // If you are doing long operations on images, clone these images into another mat
+    // container before processing. This is because these mat object are just shared pointers
+    // to the framerabber memory and hence, might be overridden when frame grabbers capture
+    // new images.
     imageTransferObj.transferAllImagestoPC();
     vector<Mat> images;
 
@@ -75,10 +91,12 @@ int main()
      imshow("image"+to_string(i), images[i]);
      //waitKey(WAIT_TIME);
     }
-	 
+	
+    // Writing frames
     recorder.writeFrames(images);
     stitchedRecorder.writeFrames(images);
-    // if(cv::waitKey(33) == 
+
+    // Press escape to exit image capture
     if ( (char)27 == (char) cv::waitKey(WAIT_TIME) ) 
        break;
 
