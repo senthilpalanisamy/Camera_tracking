@@ -8,7 +8,7 @@ find_package( OpenCV 4.0.1 REQUIRED )
 
 # some variables for image capture
 set(CLIB_EXEC output)
-set(IMAGE_STITCH_EXEC image_output2)
+set(IMAGE_STITCH_EXEC image_stitching)
 SET(DRIVER_FLAGS "-DC_GNU64=400 -DOS_LINUX -no-pie")
 SET(CMAKE_CXX_FLAGS  "${DRIVER_FLAGS}")
 
@@ -36,7 +36,6 @@ add_executable(${IMAGE_STITCH_EXEC} src/image_stitching.cpp ./src/utility_functi
 add_executable(sample_capture ./src/record_samples.cpp ./src/record_samples_main.cpp ./src/utility_functions.cpp 
 	      ./src/image_stitching.cpp)
 add_executable(calibrate_homography ./src/calibrate_camera_homographies.cpp ./src/utility_functions.cpp)
-add_executable(sequence_capture ./src/sequence_capture )
 add_executable(back_ground_subt ./src/backGroundSubtraction.cpp ./src/record_samples.cpp ./src/simple_capture.cpp
 	       ./src/utility_functions.cpp ./src/image_stitching.cpp ./src/main.cpp)
 
@@ -49,8 +48,6 @@ target_include_directories(calibrate_homography PRIVATE ./include/)
 target_link_libraries(${CLIB_EXEC} ${OpenCV_LIBS} -ljsoncpp)
 target_link_libraries(${CLIB_EXEC} /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m -pthread -ljsoncpp)
 target_link_libraries(back_ground_subt ${OpenCV_LIBS} /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m -pthread -ljsoncpp)
-target_link_libraries(sequence_capture ${OpenCV_LIBS} -ljsoncpp)
-target_link_libraries(sequence_capture /usr/local/xclib/lib/pxipl_x86_64.a  /usr/local/xclib/lib/xclib_x86_64.a m -pthread -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -lstdc++fs -ljsoncpp)
 target_link_libraries(sample_capture ${OpenCV_LIBS} ${CLIB_EXEC} -ljsoncpp)
 target_link_libraries(${IMAGE_STITCH_EXEC} ${OpenCV_LIBS} ${CLIB_EXEC} -ljsoncpp)
 target_link_libraries(calibrate_homography ${OpenCV_LIBS} ${CLIB_EXEC} -ljsoncpp)
