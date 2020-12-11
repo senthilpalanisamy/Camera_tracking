@@ -15,6 +15,13 @@
    code. Ours is a USB based license and the number is attached at the back 
    of USB (The number is MO2K/XRC5/N9WL). If you are lucky, the installation
    will be successful on the first go
+7. If XCAP screen comes alive but the drivers are not installed and they failed, 
+   at the top  the window go and 
+   select PIXCI --> PIXCI Open / Close --> Driver Assisstant
+   for trying out different versions of kernel or pre-compiled kernels
+8. The results of the compilation process will be shown on a small white window.
+   If something fails, export the whole output from the window as a log file
+   and analyse the log file to fix issues
 
 Note:-
 Things can go wrong. The installation process was not very smooth and it was
